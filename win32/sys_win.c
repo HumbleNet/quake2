@@ -19,21 +19,42 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // sys_win.h
 
-#define _WINNT_VER 0x5
 
-#include "../qcommon/qcommon.h"
-#include "winquake.h"
-#include "resource.h"
+#ifdef _WIN32
+
+#define WIN32_LEAN_AND_MEAN
+// before qcommon.h or mingw-w64 explodes
+#include <windows.h>
+
+// horrible hack for 32-bit mingw
+// for some completely inexplicable reason WinMain fails with
+// error: conflicting types for 'WinMain'
+// if it's defined after qcommon.h
+// so put it here
+static int WinMainHax (HINSTANCE hInstance, LPSTR lpCmdLine);
+
+int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+	return WinMainHax(hInstance, lpCmdLine);
+}
+
+
+#include <mmsystem.h>
+
 #include <errno.h>
 #include <float.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <direct.h>
 #include <io.h>
-#include <conio.h>
+#include "../qcommon/qcommon.h"
+
+#include "winquake.h"
+#include "resource.h"
+
 #include <process.h>
 #include <dbghelp.h>
-#include <Richedit.h>
+#include <richedit.h>
+#include <shellapi.h>
 
 #ifdef USE_OPENSSL
 #define OPENSSLEXPORT __cdecl
@@ -68,7 +89,7 @@ cvar_t	*win_priority;
 qboolean s_win95;
 
 int			starttime;
-int			ActiveApp;
+qboolean	ActiveApp;
 qboolean	Minimized;
 
 HWND		hwnd_Server;
@@ -138,11 +159,6 @@ NORETURN void Sys_Error (const char *error, ...)
 	va_list		argptr;
 	char		text[1024];
 	int			ret;
-
-#ifndef DEDICATED_ONLY
-	if (cl_hwnd && IsWindow (cl_hwnd))
-		DestroyWindow (cl_hwnd);
-#endif
 
 	Qcommon_Shutdown ();
 
@@ -1003,11 +1019,8 @@ Send Key_Event calls
 #ifndef DEDICATED_ONLY
 void Sys_SendKeyEvents (void)
 {
-	if (g_pKeyboard)
-	{
-		IN_ReadKeyboard ();
-	}
-	else
+	KBD_Update();
+
 	{
 		MSG        msg;
 
@@ -1073,10 +1086,6 @@ Sys_AppActivate
 */
 void Sys_AppActivate (void)
 {
-#ifndef DEDICATED_ONLY
-	ShowWindow ( cl_hwnd, SW_RESTORE);
-	SetForegroundWindow ( cl_hwnd );
-#endif
 }
 
 /*
@@ -1146,7 +1155,7 @@ void *Sys_GetGameAPI (void *parms, int baseq2DLL)
 #endif
 
 #else
-#error Don't know what kind of dynamic objects to use for this architecture.
+#error "Don't know what kind of dynamic objects to use for this architecture."
 #endif
 
 	if (game_library)
@@ -1792,14 +1801,8 @@ DWORD R1Q2ExceptionHandler (DWORD exceptionCode, LPEXCEPTION_POINTERS exceptionI
 	else if (win_disableexceptionhandler->intvalue)
 		return EXCEPTION_CONTINUE_SEARCH;
 
-#ifndef DEDICATED_ONLY
-	ShowCursor (TRUE);
-	if (cl_hwnd)
-		DestroyWindow (cl_hwnd);
-#else
 	if (hwnd_Server)
 		EnableWindow (hwnd_Server, FALSE);
-#endif
 
 #ifdef _DEBUG
 	ret = MessageBox (NULL, "EXCEPTION_CONTINUE_SEARCH?", "Unhandled Exception", MB_ICONERROR | MB_YESNO);
@@ -2265,8 +2268,6 @@ void Sys_UpdateURLMenu (const char *s)
 	CHAR	title[80];
 	CHAR	*dots;
 
-	GetSystemMenu (cl_hwnd, TRUE);
-
 	if (strlen (s) > 64)
 		dots = "...";
 	else
@@ -2275,10 +2276,6 @@ void Sys_UpdateURLMenu (const char *s)
 	strncpy (sys_url_location, s, sizeof(sys_url_location)-1);
 
 	Com_sprintf (title, sizeof(title), "Open \"%.64s%s\"", s, dots);
-
-	menu = GetSystemMenu (cl_hwnd, FALSE);
-	InsertMenu (menu, 0,  MF_BYPOSITION | MF_SEPARATOR, 0, NULL);
-	InsertMenu (menu, 0,  MF_BYPOSITION, 1234, title);
 }
 #endif
 
@@ -2341,7 +2338,7 @@ void Sys_Spinstats_f (void)
 	Com_Printf ("%u fast spins, %u slow spins, %.2f%% slow.\n", LOG_GENERAL, goodspins, badspins, ((float)badspins / (float)(goodspins+badspins)) * 100.0f);
 }
 
-#ifdef _M_IX86
+#if defined _M_IX86 && defined _MSC_VER
 
 __declspec(naked) unsigned short Sys_GetFPUStatus (void)
 {
@@ -2374,6 +2371,23 @@ void Sys_SetFPU (byte bits)
 	}
 }
 
+
+#else  // defined _M_IX86 && defined _MSC_VER
+
+
+__declspec(naked) unsigned short Sys_GetFPUStatus (void)
+{
+	return 0;
+}
+
+
+void Sys_SetFPU (byte bits)
+{
+}
+
+#endif  // defined _M_IX86 && defined _MSC_VER
+
+
 //FPU should be round to nearest, 24 bit precision.
 //3.20 = 0x007f
 qboolean Sys_CheckFPUStatus (void)
@@ -2402,7 +2416,7 @@ qboolean Sys_CheckFPUStatus (void)
 	last_word = fpu_control_word;
 	return true;
 }
-#endif
+
 
 /*
 ==================
@@ -2416,7 +2430,7 @@ HINSTANCE	global_hInstance;
 //#define FLOAT_GT_ZERO(f) (FLOAT2INTCAST(f) > 0)
 
 extern cvar_t	*sys_loopstyle;
-int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+static int WinMainHax (HINSTANCE hInstance, LPSTR lpCmdLine)
 {
 #ifndef NO_SERVER
 //	unsigned int	handle;
@@ -2426,10 +2440,6 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	int				spins;
 
 	badspins = goodspins = 0;
-
-    /* previous instances do not exist in Win32 */
-    if (hPrevInstance)
-        return 0;
 
 	if (hInstance)
 		strncpy (cmdline, lpCmdLine, sizeof(cmdline)-1);
@@ -2453,8 +2463,15 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 	}
 #endif
 
+#ifdef _MSC_VER
 
 	__try
+
+#else  // _MSC_VER
+
+#warning "Exception handling on Mingw"
+
+#endif  // _MSC_VER
 	{
 		Sys_SetFPU (sys_fpu_bits->intvalue);
 		Sys_CheckFPUStatus ();
@@ -2559,10 +2576,21 @@ int WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
 			oldtime = newtime;
 		}
 	}
+#ifdef _MSC_VER
+
 	__except (R1Q2ExceptionHandler(GetExceptionCode(), GetExceptionInformation()))
 	{
 		return 1;
 	}
 
+#else  // _MSC_VER
+
+#warning "Exception handling on Mingw"
+
+#endif  // _MSC_VER
+
 	return 0;
 }
+
+
+#endif  // _WIN32

@@ -153,7 +153,7 @@ typedef struct
     int encrypted;
 #    ifndef NOUNCRYPT
     unsigned long keys[3];     /* keys defining the pseudo-random sequence */
-    const unsigned long* pcrc_32_tab;
+    const z_crc_t* pcrc_32_tab;
 #    endif
 } unz_s;
 
@@ -210,7 +210,7 @@ local int unzlocal_getShort (pzlib_filefunc_def,filestream,pX)
     uLong *pX;
 {
     uLong x ;
-    int i;
+    int i = 0;
     int err;
 
     err = unzlocal_getByte(pzlib_filefunc_def,filestream,&i);
@@ -238,7 +238,7 @@ local int unzlocal_getLong (pzlib_filefunc_def,filestream,pX)
     uLong *pX;
 {
     uLong x ;
-    int i;
+    int i = 0;
     int err;
 
     err = unzlocal_getByte(pzlib_filefunc_def,filestream,&i);
@@ -1253,7 +1253,7 @@ extern int ZEXPORT unzReadCurrentFile  (file, buf, len)
         return UNZ_PARAMERROR;
 
 
-    if ((pfile_in_zip_read_info->read_buffer == NULL))
+    if (pfile_in_zip_read_info->read_buffer == NULL)
         return UNZ_END_OF_LIST_OF_FILE;
     if (len==0)
         return 0;

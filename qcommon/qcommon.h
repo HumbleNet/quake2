@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef NDEBUG
 	#include "../build.h"
-	#define	VERSION		"b"BUILD
+	#define	VERSION		"b" BUILD
 #else
 	#define BUILD "DEBUG BUILD"
 	#define	VERSION		BUILD
@@ -95,6 +95,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	#else
 		#define CPUSTRING "Unknown"
 	#endif
+
+#elif defined EMSCRIPTEN
+
+#define BUILDSTRING "emscripten"
+
+		#define CPUSTRING "emscripten"
 
 #else	// !WIN32
 
@@ -827,10 +833,10 @@ void Netchan_Setup (netsrc_t sock, netchan_t *chan, netadr_t *adr, int protocol,
 
 qboolean Netchan_NeedReliable (netchan_t *chan);
 int	 Netchan_Transmit (netchan_t *chan, int length, const byte /*@null@*/*data);
-void Netchan_OutOfBand (int net_socket, netadr_t *adr, int length, const byte *data);
-void Netchan_OutOfBandPrint (int net_socket, netadr_t *adr, const char *format, ...);
-void Netchan_OutOfBandProxy (int net_socket, netadr_t *adr, int length, const byte *data);
-void Netchan_OutOfBandProxyPrint (int net_socket, netadr_t *adr, const char *format, ...);
+void Netchan_OutOfBand (netsrc_t net_socket, netadr_t *adr, int length, const byte *data);
+void Netchan_OutOfBandPrint (netsrc_t net_socket, netadr_t *adr, const char *format, ...);
+void Netchan_OutOfBandProxy (netsrc_t net_socket, netadr_t *adr, int length, const byte *data);
+void Netchan_OutOfBandProxyPrint (netsrc_t net_socket, netadr_t *adr, const char *format, ...);
 qboolean Netchan_Process (netchan_t *chan, sizebuf_t *msg);
 
 //qboolean Netchan_CanReliable (netchan_t *chan);
@@ -994,7 +1000,7 @@ MISC
 
 
 //r1: use variadic macros where possible to avoid overhead of evaluations and va
-#if __STDC_VERSION__ == 199901L || _MSC_VER >= 1400 && !defined _M_AMD64
+#if (__STDC_VERSION__ == 199901L || _MSC_VER >= 1400 && !defined _M_AMD64) || defined(__GNUC__)
 #define		Com_DPrintf(...)	\
 do { \
 	if (developer->intvalue) \
@@ -1008,8 +1014,8 @@ void		Com_BeginRedirect (int target, char *buffer, int buffersize, void (*flush)
 void		Com_EndRedirect (qboolean flush);
 void 		_Com_DPrintf (const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
 void 		Com_Printf (const char *fmt, int level, ...) __attribute__ ((format (printf, 1, 3)));
-void 		Com_Error (int code, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
-void 		Com_Quit (void);
+void 		Com_Error (int code, const char *fmt, ...) __attribute__ ((format (printf, 2, 3), noreturn));
+void 		Com_Quit (void) __attribute__((noreturn));
 
 //extern __inline int			Com_ServerState (void);		// this should have just been a cvar...
 //extern __inline void		Com_SetServerState (int state);
@@ -1104,14 +1110,14 @@ extern void *(EXPORT *Z_TagMalloc)(int size, int tag);
 void EXPORT Z_FreeGame (void *buf);
 void RESTRICT * EXPORT Z_TagMallocGame (int size, int tag);
 void EXPORT Z_FreeTagsGame (int tag);
-void Z_Verify (const char *format, ...);
+void Z_Verify (const char *format, ...) __attribute__((format (printf, 1, 2)));
 void Z_CheckGameLeaks (void);
 
 void Qcommon_Init (int argc, char **argv);
 void Qcommon_Frame (int msec);
 void Qcommon_Shutdown (void);
 
-#if defined _WIN32 && !defined _M_AMD64
+#if defined _MSC_VER && !defined _M_AMD64
 size_t __cdecl fast_strlen(const char *s);
 void __fastcall fast_strlwr(char *s);
 int __cdecl fast_tolower(int c);
@@ -1171,7 +1177,7 @@ void	Sys_ConsoleOutput (const char *string);
 #endif
 void	Sys_SendKeyEvents (void);
 NORETURN void	Sys_Error (const char *error, ...) __attribute__ ((format (printf, 1, 2)));
-void	Sys_Quit (void);
+void	Sys_Quit (void) __attribute__((noreturn));
 char	*Sys_GetClipboardData( void );
 void	Sys_CopyProtect (void);
 void	Sys_SetWindowText(char *buff);
@@ -1192,9 +1198,10 @@ void CL_Shutdown (void);
 void CL_Frame (int msec);
 void Con_Print (const char *text);
 void SCR_BeginLoadingPlaque (void);
+void KBD_Update(void);
 
 void SV_Init (void);
-void SV_Shutdown (char *finalmsg, qboolean reconnect, qboolean crashing);
+void SV_Shutdown (const char *finalmsg, qboolean reconnect, qboolean crashing);
 void SV_Frame (int msec);
 
 #define _QCOMMON_H

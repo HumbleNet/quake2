@@ -383,7 +383,7 @@ qboolean Cbuf_AddLateCommands (void)
 	if (!s)
 		return false;
 		
-	text = Z_TagMalloc (s+1, TAGMALLOC_CMDBUFF);
+	text = (char *) Z_TagMalloc (s+1, TAGMALLOC_CMDBUFF);
 	//text = alloca (s+1);
 	text[0] = 0;
 	for (i=1 ; i<argc ; i++)
@@ -401,7 +401,7 @@ qboolean Cbuf_AddLateCommands (void)
 	}
 	
 	// pull out the commands
-	build = Z_TagMalloc (s+1, TAGMALLOC_CMDBUFF);
+	build = (char *) Z_TagMalloc (s+1, TAGMALLOC_CMDBUFF);
 	//build = alloca (s+1);
 	build[0] = 0;
 	
@@ -559,7 +559,7 @@ void Cmd_Aliaslist_f (void)
 	num = i;
 
 	len = num * sizeof(cmdalias_t);
-	sortedList = Z_TagMalloc (len, TAGMALLOC_CMD);
+	sortedList = (cmdalias_t *) Z_TagMalloc (len, TAGMALLOC_CMD);
 	//sortedList = alloca(len);
 	
 	for (a = cmd_alias, i = 0; a ; a = a->next, i++)
@@ -624,7 +624,7 @@ void Cmd_Alias_f (void)
 		}
 	}*/
 
-	data = rbfind (s, aliastree);
+	data = (void **) rbfind (s, aliastree);
 	if (data)
 		a = *(cmdalias_t **)data;
 	else
@@ -633,13 +633,13 @@ void Cmd_Alias_f (void)
 
 	if (!a)
 	{
-		a = Z_TagMalloc (sizeof(cmdalias_t), TAGMALLOC_ALIAS);
+		a = (cmdalias_t *) Z_TagMalloc (sizeof(cmdalias_t), TAGMALLOC_ALIAS);
 		a->next = cmd_alias;
 		cmd_alias = a;
 
 		strcpy (a->name, s);
 
-		data = rbsearch (a->name, aliastree);
+		data = (void **) rbsearch (a->name, aliastree);
 		*data = a;
 	}
 	else
@@ -745,7 +745,7 @@ static void Cmd_Trigger_f( void )
 	}
 
 	//!!!!!!! FIXME HACK XXXXXXXX maniac you are insane
-	trigger = Z_TagMalloc( sizeof( cmd_trigger_t ) + cmdLen + matchLen, TAGMALLOC_TRIGGER);
+	trigger = (cmd_trigger_t *) Z_TagMalloc( sizeof( cmd_trigger_t ) + cmdLen + matchLen, TAGMALLOC_TRIGGER);
 	trigger->command = (char *)((byte *)trigger + sizeof( cmd_trigger_t ));
 	trigger->match = trigger->command + cmdLen;
 	strcpy (trigger->command, command);
@@ -1168,13 +1168,13 @@ void	EXPORT Cmd_AddCommand (const char *cmd_name, xcommand_t function)
 		Cmd_RemoveCommand (cmd_name);
 	}
 
-	cmd = Z_TagMalloc (sizeof(cmd_function_t), TAGMALLOC_CMD);
+	cmd = (cmd_function_t *) Z_TagMalloc (sizeof(cmd_function_t), TAGMALLOC_CMD);
 	cmd->name = cmd_name;
 	cmd->function = function;
 	cmd->next = cmd_functions;
 	cmd_functions = cmd;
 
-	data = rbsearch (cmd->name, cmdtree);
+	data = (void **) rbsearch (cmd->name, cmdtree);
 	*data = cmd;
 }
 
@@ -1416,7 +1416,7 @@ void	Cmd_ExecuteString (char *text)
 
 	// check functions
 	// FIXME CRASH: NULL in the rb tree!
-	data = rbfind (cmd_argv[0], cmdtree);
+	data = (void **) rbfind (cmd_argv[0], cmdtree);
 	if (data)
 	{
 		cmd = *(cmd_function_t **)data;
@@ -1438,7 +1438,7 @@ void	Cmd_ExecuteString (char *text)
 
 
 	// check alias
-	data = rbfind (cmd_argv[0], aliastree);
+	data = (void **) rbfind (cmd_argv[0], aliastree);
 	if (data)
 	{
 		char expanded[MAX_STRING_CHARS];
@@ -1497,7 +1497,7 @@ void Cmd_List_f (void)
 	num = i;
 
 	len = num * sizeof(cmd_function_t);
-	sortedList = Z_TagMalloc (len, TAGMALLOC_CMD);
+	sortedList = (cmd_function_t *) Z_TagMalloc (len, TAGMALLOC_CMD);
 	//sortedList = alloca(len);
 	
 	for (cmd = cmd_functions, i = 0; cmd ; cmd = cmd->next, i++)

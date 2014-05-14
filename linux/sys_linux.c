@@ -1,3 +1,5 @@
+#ifndef _WIN32
+
 #include <unistd.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -13,13 +15,14 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <ctype.h>
-#include <sys/wait.h>
-#include <sys/mman.h>
 #include <errno.h>
-#include <execinfo.h>
 #include <sys/utsname.h>
 #define __USE_GNU 1
+
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif  // _GNU_SOURCE
+
 #include <link.h>
 #include <sys/ucontext.h>
 #include <sys/resource.h>
@@ -35,9 +38,23 @@
 //#include <fenv.h>
 #include <dlfcn.h>
 
+#ifndef EMSCRIPTEN
+
+#include <sys/wait.h>
+#include <execinfo.h>
+
+#else  // EMSCRIPTEN
+
+#include <emscripten.h>
+
+#endif  // EMSCRIPTEN
+
 #include "../qcommon/qcommon.h"
 
-#include "../linux/rw_linux.h"
+#include "../client/ref.h"
+
+#include "../game/game.h"
+
 
 cvar_t *nostdin;
 cvar_t *nostdout;
@@ -116,30 +133,6 @@ void Sys_SetWindowText (char *dummy)
 {
 }
 
-void Sys_Printf (char *fmt, ...)
-{
-	va_list		argptr;
-	char		text[1024];
-	unsigned char		*p;
-
-    if (nostdout && nostdout->intvalue)
-        return;
-
-	va_start (argptr,fmt);
-	vsprintf (text,fmt,argptr);
-	va_end (argptr);
-
-	if (strlen(text) > sizeof(text))
-		Sys_Error("memory overwrite in Sys_Printf");
-
-	for (p = (unsigned char *)text; *p; p++) {
-		*p &= 0x7f;
-		if ((*p > 128 || *p < 32) && *p != 10 && *p != 13 && *p != 9)
-			printf("[%02x]", *p);
-		else
-			putc(*p, stdout);
-	}
-}
 
 void Sys_Quit (void)
 {
@@ -147,7 +140,9 @@ void Sys_Quit (void)
 	CL_Shutdown ();
 #endif
 	Qcommon_Shutdown ();
-    fcntl (0, F_SETFL, fcntl (0, F_GETFL, 0) & ~FNDELAY);
+#ifndef EMSCRIPTEN
+	fcntl (0, F_SETFL, fcntl (0, F_GETFL, 0) & ~FNDELAY);
+#endif  // EMSCRIPTEN
 	exit(0);
 }
 
@@ -186,6 +181,9 @@ static int dlcallback (struct dl_phdr_info *info, size_t size, void *data)
 	return 0;
 }
 #endif
+
+
+#ifndef EMSCRIPTEN
 
 /* Obtain a backtrace and print it to stderr. 
  * Adapted from http://www.delorie.com/gnu/docs/glibc/libc_665.html
@@ -253,6 +251,10 @@ void Sys_Backtrace (int sig, siginfo_t *siginfo, void *secret)
 	raise (SIGSEGV);
 }
 
+
+#endif  // EMSCRIPTEN
+
+
 void Sys_ProcessTimes_f (void)
 {
 	struct rusage	usage;
@@ -302,9 +304,15 @@ void Sys_Spinstats_f (void)
 
 unsigned short Sys_GetFPUStatus (void)
 {
+#ifndef EMSCRIPTEN
 	unsigned short fpuword;
 	__asm__ __volatile__ ("fnstcw %0" : "=m" (fpuword));
 	return fpuword;
+
+#else  // EMSCRIPTEN
+
+	return 0;
+#endif  // EMSCRIPTEN
 }
 
 /*
@@ -312,6 +320,7 @@ unsigned short Sys_GetFPUStatus (void)
  */
 void Sys_SetFPU (void)
 {
+#ifndef EMSCRIPTEN
 	unsigned short fpuword;
 	fpuword = Sys_GetFPUStatus ();
 	fpuword &= ~(3 << 8);
@@ -319,6 +328,7 @@ void Sys_SetFPU (void)
 	fpuword &= ~(3 << 10);
 	fpuword |= (0 << 10);
 	__asm__ __volatile__ ("fldcw %0" : : "m" (fpuword));
+#endif  // EMSCRIPTEN
 }
 
 void Sys_Init(void)
@@ -327,6 +337,9 @@ void Sys_Init(void)
 //	Sys_SetFPCW();
 #endif
   /* Install our signal handler */
+
+#ifndef EMSCRIPTEN
+
 #ifndef __x86_64__
 	struct sigaction sa;
 
@@ -354,6 +367,8 @@ void Sys_Init(void)
 	signal (SIGTERM, Sys_KillServer);
 	signal (SIGINT, Sys_KillServer);
 
+#endif  // EMSCRIPTEN
+
 	//initialize timer base
 	Sys_Milliseconds ();
 }
@@ -363,8 +378,10 @@ void Sys_Error (const char *error, ...)
     va_list     argptr;
     char        string[1024];
 
+#ifndef EMSCRIPTEN
 // change stdin to non blocking
     fcntl (0, F_SETFL, fcntl (0, F_GETFL, 0) & ~FNDELAY);
+#endif  // EMSCRIPTEN
 
 #ifndef DEDICATED_ONLY
 	CL_Shutdown ();
@@ -380,16 +397,6 @@ void Sys_Error (const char *error, ...)
 
 } 
 
-void Sys_Warn (char *warning, ...)
-{ 
-    va_list     argptr;
-    char        string[1024];
-    
-    va_start (argptr,warning);
-    vsprintf (string,warning,argptr);
-    va_end (argptr);
-	fprintf(stderr, "Warning: %s", string);
-} 
 
 /*
 ============
@@ -410,7 +417,6 @@ int	Sys_FileTime (char *path)
 
 void floating_point_exception_handler(int whatever)
 {
-//	Sys_Warn("floating point exception\n");
 	signal(SIGFPE, floating_point_exception_handler);
 }
 
@@ -479,6 +485,12 @@ Loads the game dll
 */
 void *Sys_GetGameAPI (void *parms, int baseq2)
 {
+#if defined(GAME_HARD_LINKED)
+
+	return GetGameAPI(parms);
+
+#else  // BUILTIN_GAME
+
 	void	*(*GetGameAPI) (void *);
 
 	char	name[MAX_OSPATH];
@@ -559,6 +571,7 @@ void *Sys_GetGameAPI (void *parms, int baseq2)
 	}
 
 	return GetGameAPI (parms);
+#endif  // BUILTIN_GAME
 }
 
 /*****************************************************************************/
@@ -570,8 +583,7 @@ void Sys_AppActivate (void)
 void Sys_SendKeyEvents (void)
 {
 #ifndef DEDICATED_ONLY
-	if (KBD_Update_fp)
-		KBD_Update_fp();
+	KBD_Update();
 #endif
 
 	// grab frame time 
@@ -585,6 +597,26 @@ char *Sys_GetClipboardData(void)
 	return NULL;
 }
 
+
+#ifdef EMSCRIPTEN
+
+
+static unsigned int g_oldtime = 0;
+
+void mainloop() {
+	unsigned int newtime = Sys_Milliseconds();
+	unsigned int time = newtime - g_oldtime;
+
+	if (time >= 1) {
+		g_oldtime = newtime;
+		Qcommon_Frame(time);
+	}
+}
+
+
+#endif  // EMSCRIPTEN
+
+
 int main (int argc, char **argv)
 {
 	unsigned int 	time, oldtime, newtime, spins;
@@ -593,24 +625,36 @@ int main (int argc, char **argv)
 	//saved_euid = geteuid();
 	//seteuid(getuid());
 	//
-	
+
+#ifndef EMSCRIPTEN
 	if (getuid() == 0 || geteuid() == 0)
 		Sys_Error ("For security reasons, do not run Quake II as root.");
+#endif  // EMSCRIPTEN
 
 	binary_name = argv[0];
 
 	Qcommon_Init(argc, argv);
 
+#ifndef EMSCRIPTEN
 	fcntl(0, F_SETFL, fcntl (0, F_GETFL, 0) | FNDELAY);
+#endif  // EMSCRIPTEN
 
 	nostdin = Cvar_Get ("nostdin", "0", 0);
 	nostdout = Cvar_Get("nostdout", "0", 0);
+#ifndef EMSCRIPTEN
 	if (!nostdout->intvalue) {
 		fcntl(0, F_SETFL, fcntl (0, F_GETFL, 0) | FNDELAY);
 //		printf ("Linux Quake -- Version %0.3f\n", LINUX_VERSION);
 	}
+#endif  // EMSCRIPTEN
 
-    oldtime = Sys_Milliseconds ();
+#ifdef EMSCRIPTEN
+
+	g_oldtime = Sys_Milliseconds();
+	emscripten_set_main_loop(mainloop, 0, 1);
+
+#else  // EMSCRIPTEN
+	oldtime = Sys_Milliseconds ();
     while (1)
     {
 		// find time spent rendering last frame
@@ -639,7 +683,7 @@ int main (int argc, char **argv)
 		Qcommon_Frame (time);
 		oldtime = newtime;
     }
-
+#endif  // EMSCRIPTEN
 }
 
 //r1 :redundant
@@ -647,32 +691,6 @@ void Sys_CopyProtect(void)
 {
 }
 
-#if 0
-/*
-================
-Sys_MakeCodeWriteable
-================
-*/
-void Sys_MakeCodeWriteable (unsigned long startaddr, unsigned long length)
-{
-
-	int r;
-	unsigned long addr;
-	int psize = getpagesize();
-
-	addr = (startaddr & ~(psize-1)) - psize;
-
-//	fprintf(stderr, "writable code %lx(%lx)-%lx, length=%lx\n", startaddr,
-//			addr, startaddr+length, length);
-
-	r = mprotect((char*)addr, length + startaddr - addr + psize, 7);
-
-	if (r < 0)
-    		Sys_Error("Protection change failed\n");
-
-}
-
-#endif
 
 qboolean Sys_CheckFPUStatus (void)
 {
@@ -712,3 +730,6 @@ void Sys_UpdateURLMenu (const char *s)
 {
 	//FIXME
 }
+
+
+#endif  // !_WIN32

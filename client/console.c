@@ -37,12 +37,7 @@ void DrawString (int x, int y, const char *s)
 	if (viddef.height * scr_conlines > y)
 		return;
 
-	while (*s)
-	{
-		re.DrawChar (x, y, *s);
-		x+=8;
-		s++;
-	}
+	R_DrawString(x, y, s, 0, strlen(s));
 }
 
 void DrawAltString (int x, int y, const char *s)
@@ -51,12 +46,7 @@ void DrawAltString (int x, int y, const char *s)
 	if (viddef.height * scr_conlines > y)
 		return;
 
-	while (*s)
-	{
-		re.DrawChar (x, y, *s ^ 0x80);
-		x+=8;
-		s++;
-	}
+	R_DrawString(x, y, s, 0x80, strlen(s));
 }
 
 
@@ -592,10 +582,10 @@ static void Con_DrawInput (void)
 	length = (int)strlen (text);
 
 	for (i=0 ; i<length; i++)
-		re.DrawChar ( (i+1)<<3, con.vislines - 22, text[i]);
+		R_DrawChar ( (i+1) * 8, con.vislines - 22, text[i]);
 
 	if (((int)(cls.realtime>>8)&1))
-		re.DrawChar ( (linepos)<<3, con.vislines - 21, '_');
+		R_DrawChar ( (linepos) * 8, con.vislines - 21, '_');
 
 // remove cursor
 	//key_lines[edit_line][key_linepos] = 0;
@@ -611,7 +601,7 @@ Draws the last few lines of output transparently over the game top
 */
 void Con_DrawNotify (void)
 {
-	int		x, v;
+	int		v;
 	const char	*text;
 	int		i;
 	int		time;
@@ -630,9 +620,7 @@ void Con_DrawNotify (void)
 			continue;
 		text = con.text + (i % con.totallines)*con.linewidth;
 		
-		for (x = 0 ; x < con.linewidth ; x++)
-			re.DrawChar ( (x+1)<<3, v, text[x]);
-
+		R_DrawString(8, v, text, 0, con.linewidth);
 		v += 8;
 	}
 
@@ -673,15 +661,10 @@ void Con_DrawNotify (void)
 			cursorpos = chat_cursorpos + skip;
 		}
 
-		x = 0;
-		while(s[x])
-		{
-			re.DrawChar ( (x+skip)<<3, v, s[x]);
-			x++;
-		}
+		R_DrawString(skip, v, s, 0, strlen(s));
 
 		if (((cls.realtime>>8)&1))
-			re.DrawChar ( (cursorpos)<<3, v+1, '_');
+			R_DrawChar ( (cursorpos) * 8, v+1, '_');
 		v += 8;
 	}
 	
@@ -734,15 +717,13 @@ void Con_DrawConsole (float frac)
 	else
 		offset = 0;
 
-	for (x=i-1; x>=0 ; x--)
-		re.DrawChar (viddef.width-2-(i*8)+x*8, lines-12-offset, 128 + version[x] );
+	R_DrawString(viddef.width - 2 - (i * 8), lines-12-offset, version, 128, i);
 
 	t = time (NULL);
 	today = localtime(&t);
 
 	i = (int)strftime (version, sizeof(version), "%H:%M:%S", today);
-	for (x=0 ; x<i ; x++)
-		re.DrawChar (viddef.width-66+x*8, lines-22-offset, 128 + version[x] );
+	R_DrawString(viddef.width - 66, lines - 22 - offset, version, 128, i);
 
 // draw the text
 	con.vislines = lines;
@@ -762,7 +743,7 @@ void Con_DrawConsole (float frac)
 	{
 	// draw arrows to show the buffer is backscrolled
 		for (x=0 ; x<con.linewidth ; x+=4)
-			re.DrawChar ( (x+1)<<3, y, '^');
+			R_DrawChar ( (x+1) * 8, y, '^');
 	
 		y -= 8;
 		rows--;
@@ -778,8 +759,7 @@ void Con_DrawConsole (float frac)
 			
 		text = con.text + (row % con.totallines)*con.linewidth;
 
-		for (x=0 ; x<con.linewidth ; x++)
-			re.DrawChar ( (x+1)<<3, y, text[x]);
+		R_DrawString(8, y, text, 0, con.linewidth);
 	}
 
 //ZOID
@@ -827,7 +807,7 @@ void Con_DrawConsole (float frac)
 		// draw it
 		y = con.vislines-12;
 		for (i = 0; i < j; i++)
-			re.DrawChar ( (i+1)<<3, y, dlbar[i]);
+			R_DrawChar ( (i+1) * 8, y, dlbar[i]);
 	}
 //ZOID
 

@@ -19,6 +19,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // conproc.c -- support for qhost
 
+
+#ifdef _WIN32
+
+
 #define WIN32_LEAN_AND_MEAN
 #include <stdio.h>
 #include <stdlib.h>
@@ -434,3 +438,6 @@ BOOL SetConsoleCXCY(HANDLE hStdout, int cx, int cy)
  
 	return TRUE;
 }
+
+
+#endif  // _WIN32

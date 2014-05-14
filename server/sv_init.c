@@ -466,10 +466,10 @@ void SV_InitGame (void)
 
 	svs.spawncount = randomMT()&0x7FFFFFFF;
 
-	svs.clients = Z_TagMalloc (sizeof(client_t)*maxclients->intvalue, TAGMALLOC_CLIENTS);
+	svs.clients = (client_t *) Z_TagMalloc (sizeof(client_t)*maxclients->intvalue, TAGMALLOC_CLIENTS);
 
 	svs.num_client_entities = maxclients->intvalue*UPDATE_BACKUP*64;
-	svs.client_entities = Z_TagMalloc (sizeof(entity_state_t)*svs.num_client_entities, TAGMALLOC_CL_ENTS);
+	svs.client_entities = (entity_state_t *) Z_TagMalloc (sizeof(entity_state_t)*svs.num_client_entities, TAGMALLOC_CL_ENTS);
 
 	memset (svs.clients, 0, sizeof(client_t)*maxclients->intvalue);
 	memset (svs.client_entities, 0, sizeof(entity_state_t)*svs.num_client_entities);

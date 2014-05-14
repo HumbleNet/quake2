@@ -306,7 +306,7 @@ void CL_PrepRefresh (void)
 	// clear tents - dangling model pointers
 	CL_ClearTEnts ();
 
-	re.BeginRegistration (mapname);
+	R_BeginRegistration (mapname);
 
 	Com_Printf ("                                     \r", LOG_CLIENT);
 
@@ -349,7 +349,7 @@ void CL_PrepRefresh (void)
 	cl.model_clip[0] = NULL;
 	cl.model_draw[0] = NULL;
 
-	cl.model_draw[1] = re.RegisterModel (cl.configstrings[CS_MODELS+1]);
+	cl.model_draw[1] = R_RegisterModel (cl.configstrings[CS_MODELS+1]);
 
 	if (cl.configstrings[CS_MODELS+1][0] == '*')
 		cl.model_clip[1] = CM_InlineModel (cl.configstrings[CS_MODELS+1]);
@@ -375,7 +375,7 @@ void CL_PrepRefresh (void)
 
 			if (cl.configstrings[CS_MODELS+i][0] != '#')
 			{
-				cl.model_draw[i] = re.RegisterModel (cl.configstrings[CS_MODELS+i]);
+				cl.model_draw[i] = R_RegisterModel (cl.configstrings[CS_MODELS+i]);
 				if (cl.configstrings[CS_MODELS+i][0] == '*')
 					cl.model_clip[i] = CM_InlineModel (cl.configstrings[CS_MODELS+i]);
 				else
@@ -392,7 +392,7 @@ void CL_PrepRefresh (void)
 	SCR_UpdateScreen ();
 	for (i=1 ; i<MAX_IMAGES && cl.configstrings[CS_IMAGES+i][0] ; i++)
 	{
-		re.RegisterPic (cl.configstrings[CS_IMAGES+i]);
+		Draw_FindPic (cl.configstrings[CS_IMAGES+i]);
 		Sys_SendKeyEvents ();	// pump message loop
 	}
 	
@@ -432,12 +432,12 @@ void CL_PrepRefresh (void)
 		VectorClear (axis);
 	}
 
-	re.SetSky (cl.configstrings[CS_SKY], rotate, axis);
+	R_SetSky (cl.configstrings[CS_SKY], rotate, axis);
 	Com_Printf ("   \r", LOG_CLIENT);
 
 	// the renderer can now free unneeded stuff
 	if (deferred_model_index == MAX_MODELS)
-		re.EndRegistration ();
+		R_EndRegistration ();
 
 	// clear any lines of console text
 	Con_ClearNotify ();
@@ -534,7 +534,7 @@ void V_Gun_Model_f (void)
 		return;
 	}
 	Com_sprintf (name, sizeof(name), "models/%s/tris.md2", Cmd_Argv(1));
-	gun_model = re.RegisterModel (name);
+	gun_model = R_RegisterModel (name);
 }
 
 //============================================================================
@@ -545,7 +545,7 @@ void V_Gun_Model_f (void)
 SCR_DrawCrosshair
 =================
 */
-__inline void SCR_DrawCrosshair (void)
+static void SCR_DrawCrosshair (void)
 {
 	if (!crosshair->intvalue)
 		return;
@@ -581,11 +581,7 @@ V_RenderView
 
 ==================
 */
-#ifdef CL_STEREO_SUPPORT
-void V_RenderView( float stereo_separation )
-#else
 void V_RenderView(void)
-#endif
 {
 	if (cls.state != ca_active)
 		return;
@@ -631,15 +627,6 @@ void V_RenderView(void)
 		}
 
 		// offset vieworg appropriately if we're doing stereo separation
-#ifdef CL_STEREO_SUPPORT
-		if ( stereo_separation != 0 )
-		{
-			vec3_t tmp;
-
-			VectorScale( cl.v_right, stereo_separation, tmp );
-			VectorAdd( cl.refdef.vieworg, tmp, cl.refdef.vieworg );
-		}
-#endif
 
 		// never let it sit exactly on a node line, because a water plane can
 		// dissapear when viewed with the eye exactly on it.
@@ -686,7 +673,7 @@ void V_RenderView(void)
 	}
 
 	if (!cl.force_refdef)
-		re.RenderFrame (&cl.refdef);
+		R_RenderFrame (&cl.refdef);
 
 	if (cl_stats->intvalue)
 		Com_Printf ("ent:%i  lt:%i  part:%i\n", LOG_CLIENT, r_numentities, r_numdlights, r_numparticles);
@@ -708,7 +695,7 @@ void V_RenderView(void)
 		int x;
 		Com_sprintf (buff, sizeof(buff), "%d", spc);
 		for (x = 0; x < strlen(buff); x++) {
-			re.DrawChar (viddef.width-26+x*8, viddef.height / 2, 128 + buff[x]);
+			R_DrawChar (viddef.width-26+x*8, viddef.height / 2, 128 + buff[x]);
 		}
 	}
 
@@ -728,7 +715,7 @@ void V_RenderView(void)
 		len = Com_sprintf (buff, sizeof(buff), "%d", fps);
 		for (x = 0; x < len; x++)
 		{
-			re.DrawChar (viddef.width-26+x*8+cl_drawfps_x->intvalue, viddef.height - 16 + cl_drawfps_y->intvalue, 128 + buff[x]);
+			R_DrawChar (viddef.width-26+x*8+cl_drawfps_x->intvalue, viddef.height - 16 + cl_drawfps_y->intvalue, 128 + buff[x]);
 		}
 	}
 
@@ -743,7 +730,7 @@ void V_RenderView(void)
 		len = Com_sprintf (buff, sizeof(buff), "%d:%.2d", mins, secs);
 		for (x = 0; x < len; x++)
 		{
-			re.DrawChar (x * 8 + cl_drawmaptime_x->intvalue, viddef.height - 8 + cl_drawmaptime_y->intvalue, 128 + buff[x]);
+			R_DrawChar (x * 8 + cl_drawmaptime_x->intvalue, viddef.height - 8 + cl_drawmaptime_y->intvalue, 128 + buff[x]);
 		}
 	}
 
@@ -756,7 +743,7 @@ void V_RenderView(void)
 		{
 			int x;
 			for (x=0 ; x<sizeof(rateMsg)-1; x++)
-				re.DrawChar (1+(x*8), 250, 128 + rateMsg[x] );
+				R_DrawChar (1+(x*8), 250, 128 + rateMsg[x] );
 		}
 
 		old = &cl.frames[cl.frame.deltaframe & UPDATE_MASK];
@@ -766,21 +753,21 @@ void V_RenderView(void)
 			// is too old, so we can't reconstruct it properly.
 			int x;
 			for (x=0 ; x<sizeof(frameMsg)-1; x++)
-				re.DrawChar (1+(x*8), 266, 128 + frameMsg[x] );
+				R_DrawChar (1+(x*8), 266, 128 + frameMsg[x] );
 		}
 		
 		if (cl.parse_entities - old->parse_entities > MAX_PARSE_ENTITIES-128)
 		{
 			int x;
 			for (x=0 ; x<sizeof(parseMsg)-1; x++)
-				re.DrawChar (1+(x*8), 282, 128 + parseMsg[x] );
+				R_DrawChar (1+(x*8), 282, 128 + parseMsg[x] );
 		}
 
 		if (noFrameFromServerPacket > 2)
 		{
 			int x;
 			for (x=0 ; x<sizeof(overflowMsg)-1; x++)
-				re.DrawChar (1+(x*8), 298, 128 + overflowMsg[x] );
+				R_DrawChar (1+(x*8), 298, 128 + overflowMsg[x] );
 		}
 	}
 
@@ -844,8 +831,8 @@ void _particlecount_changed (cvar_t *self, char *old, char *newValue)
 
 	count = self->intvalue;
 
-	particles = Z_TagMalloc (count * sizeof(*particles), TAGMALLOC_CL_PARTICLES);
-	r_particles = Z_TagMalloc (count * sizeof(*r_particles), TAGMALLOC_CL_PARTICLES);
+	particles = (cparticle_t *) Z_TagMalloc (count * sizeof(*particles), TAGMALLOC_CL_PARTICLES);
+	r_particles = (particle_t *) Z_TagMalloc (count * sizeof(*r_particles), TAGMALLOC_CL_PARTICLES);
 
 	//allocated uninit
 	CL_ClearParticles (count);

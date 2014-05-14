@@ -24,7 +24,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "client.h"
 #include "../client/qmenu.h"
 
-static int	m_main_cursor;
+typedef enum {
+	M_MENU_MULTIPLAYER,
+	M_MENU_OPTIONS,
+	M_MENU_VIDEO,
+#if !defined(EMSCRIPTEN) || !defined(NDEBUG)
+	M_MENU_QUIT
+#endif
+} main_menu_selections;
+
+static main_menu_selections	m_main_cursor;
 
 #define NUM_CURSOR_FRAMES 15
 
@@ -33,9 +42,6 @@ static char *menu_move_sound	= "misc/menu2.wav";
 static char *menu_out_sound		= "misc/menu3.wav";
 
 void M_Menu_Main_f (void);
-static 	void M_Menu_Game_f (void);
-static 		void M_Menu_LoadGame_f (void);
-static 		void M_Menu_SaveGame_f (void);
 static 		void M_Menu_PlayerConfig_f (void);
 static 			void M_Menu_DownloadOptions_f (void);
 static 		void M_Menu_Credits_f( void );
@@ -151,7 +157,7 @@ static const char *Default_MenuKey( menuframework_s *m, int key )
 
 	if ( m )
 	{
-		if ( ( item = Menu_ItemAtCursor( m ) ) != 0 )
+		if ( ( item = (menucommon_s *) Menu_ItemAtCursor( m ) ) != 0 )
 		{
 			if ( item->type == MTYPE_FIELD )
 			{
@@ -273,7 +279,7 @@ higher res screens.
 */
 static void M_DrawCharacter (int cx, int cy, int num)
 {
-	re.DrawChar ( cx + ((viddef.width - 320)>>1), cy + ((viddef.height - 240)>>1), num);
+	R_DrawChar ( cx + ((viddef.width - 320)>>1), cy + ((viddef.height - 240)>>1), num);
 }
 
 static void M_Print (int cx, int cy, char *str)
@@ -324,7 +330,7 @@ static void M_DrawCursor( int x, int y, int f )
 		{
 			Com_sprintf( cursorname, sizeof( cursorname ), "m_cursor%d", i );
 
-			re.RegisterPic( cursorname );
+			Draw_FindPic( cursorname );
 		}
 		cached = true;
 	}
@@ -384,7 +390,11 @@ MAIN MENU
 
 =======================================================================
 */
-#define	MAIN_ITEMS	5
+#if !defined(EMSCRIPTEN) || !defined(NDEBUG)
+#define	MAIN_ITEMS	4
+#else
+#define	MAIN_ITEMS	3
+#endif
 
 
 static void M_Main_Draw (void)
@@ -398,11 +408,12 @@ static void M_Main_Draw (void)
 	char litname[80];
 	char *names[] =
 	{
-		"m_main_game",
 		"m_main_multiplayer",
 		"m_main_options",
 		"m_main_video",
+#if !defined(EMSCRIPTEN) || !defined(NDEBUG)
 		"m_main_quit",
+#endif
 		0
 	};
 
@@ -448,14 +459,12 @@ static const char *M_Main_Key (int key)
 
 	case K_KP_DOWNARROW:
 	case K_DOWNARROW:
-		if (++m_main_cursor >= MAIN_ITEMS)
-			m_main_cursor = 0;
+		m_main_cursor = (main_menu_selections) ((m_main_cursor + 1) % MAIN_ITEMS);
 		return sound;
 
 	case K_KP_UPARROW:
 	case K_UPARROW:
-		if (--m_main_cursor < 0)
-			m_main_cursor = MAIN_ITEMS - 1;
+		m_main_cursor = (main_menu_selections) ((m_main_cursor + MAIN_ITEMS - 1) % MAIN_ITEMS);
 		return sound;
 
 	case K_KP_ENTER:
@@ -464,25 +473,23 @@ static const char *M_Main_Key (int key)
 
 		switch (m_main_cursor)
 		{
-		case 0:
-			M_Menu_Game_f ();
-			break;
-
-		case 1:
+		case M_MENU_MULTIPLAYER:
 			M_Menu_Multiplayer_f();
 			break;
 
-		case 2:
+		case M_MENU_OPTIONS:
 			M_Menu_Options_f ();
 			break;
 
-		case 3:
+		case M_MENU_VIDEO:
 			M_Menu_Video_f ();
 			break;
 
-		case 4:
+#if !defined(EMSCRIPTEN) || !defined(NDEBUG)
+		case M_MENU_QUIT:
 			M_Menu_Quit_f ();
 			break;
+#endif
 		}
 	}
 
@@ -690,9 +697,9 @@ static void M_FindKeysForCommand (char *command, int *twokeys)
 static void KeyCursorDrawFunc( menuframework_s *menu )
 {
 	if ( bind_grab )
-		re.DrawChar( menu->x, menu->y + menu->cursor * 9, '=' );
+		R_DrawChar( menu->x, menu->y + menu->cursor * 9, '=' );
 	else
-		re.DrawChar( menu->x, menu->y + menu->cursor * 9, 12 + ( ( int ) ( Sys_Milliseconds() / 250 ) & 1 ) );
+		R_DrawChar( menu->x, menu->y + menu->cursor * 9, 12 + ( ( int ) ( Sys_Milliseconds() / 250 ) & 1 ) );
 }
 
 static void DrawKeyBindingFunc( void *self )
@@ -1076,7 +1083,7 @@ static void CustomizeControlsFunc( void *unused )
 	M_Menu_Keys_f();
 }
 
-#ifdef _WIN32
+/*#ifdef _WIN32
 static void DirectInputFunc (void *unused)
 {
 	Cvar_SetValue ("m_directinput", (float)s_r1q2_dinput.curvalue);
@@ -1088,7 +1095,7 @@ static void AccelFixFunc (void *unused)
 	Cvar_SetValue ("m_fixaccel", (float)s_r1q2_winxp.curvalue);
 	IN_Restart_f();
 }
-#endif
+#endif*/
 
 static void DeferFunc (void *unused)
 {
@@ -1159,7 +1166,7 @@ static void R1Q2_MenuInit (void)
 	s_r1q2_warning2.generic.x    = 160;
 	s_r1q2_warning2.generic.y	 = 10;
 
-#ifdef _WIN32
+/*#ifdef _WIN32
 	s_r1q2_dinput.generic.type = MTYPE_SPINCONTROL;
 	s_r1q2_dinput.generic.x	= 0;
 	s_r1q2_dinput.generic.y	= 30;
@@ -1175,7 +1182,7 @@ static void R1Q2_MenuInit (void)
 	s_r1q2_winxp.generic.callback = AccelFixFunc;
 	s_r1q2_winxp.itemnames = yesno_names;
 	s_r1q2_winxp.curvalue = (int)ClampCvar (0, 1, Cvar_VariableValue ("m_fixaccel"));
-#endif
+#endif*/
 
 	s_r1q2_defer.generic.type = MTYPE_SPINCONTROL;
 	s_r1q2_defer.generic.x	= 0;
@@ -1424,7 +1431,7 @@ static void UpdateSoundQualityFunc( void *unused )
 	M_Print( 16 + 16, 120 - 48 + 24, "please be patient." );
 
 	// the text box won't show up unless we do a buffer swap
-	re.EndFrame();
+	GLimp_EndFrame();
 
 	CL_Snd_Restart_f();
 }
@@ -2065,9 +2072,9 @@ static void M_Credits_MenuDraw( void )
 			x = ( viddef.width - (int)strlen( credits[i] ) * 8 - stringoffset * 8 ) / 2 + ( j + stringoffset ) * 8;
 
 			if ( bold )
-				re.DrawChar( x, y, credits[i][j+stringoffset] + 128 );
+				R_DrawChar( x, y, credits[i][j+stringoffset] + 128 );
 			else
-				re.DrawChar( x, y, credits[i][j+stringoffset] );
+				R_DrawChar( x, y, credits[i][j+stringoffset] );
 		}
 	}
 
@@ -2145,166 +2152,6 @@ static void M_Menu_Credits_f( void )
 	M_PushMenu( M_Credits_MenuDraw, M_Credits_Key);
 }
 
-/*
-=============================================================================
-
-GAME MENU
-
-=============================================================================
-*/
-
-//static int		m_game_cursor;
-
-static menuframework_s	s_game_menu;
-static menuaction_s		s_easy_game_action;
-static menuaction_s		s_medium_game_action;
-static menuaction_s		s_hard_game_action;
-static menuaction_s		s_load_game_action;
-static menuaction_s		s_save_game_action;
-static menuaction_s		s_credits_action;
-static menuseparator_s	s_blankline;
-
-static void StartGame( void )
-{
-	if (!CM_MapWillLoad ("base1"))
-	{
-		Com_Printf ("ERROR: Your Quake II installation is missing the single player data, you cannot start a single player game.\n", LOG_GENERAL);
-		M_PopMenu ();
-		return;
-	}
-
-	// disable updates and start the cinematic going
-	cl.servercount = -1;
-	M_ForceMenuOff ();
-	Cvar_SetValue( "deathmatch", 0 );
-	Cvar_SetValue( "coop", 0 );
-
-	//Cvar_SetValue( "gamerules", 0 );		//PGM
-
-	Cbuf_AddText ("loading ; killserver ; wait ; newgame\n");
-	cls.key_dest = key_game;
-}
-
-static void EasyGameFunc( void *data )
-{
-	Cvar_ForceSet( "skill", "0" );
-	StartGame();
-}
-
-static void MediumGameFunc( void *data )
-{
-	Cvar_ForceSet( "skill", "1" );
-	StartGame();
-}
-
-static void HardGameFunc( void *data )
-{
-	Cvar_ForceSet( "skill", "2" );
-	StartGame();
-}
-
-static void LoadGameFunc( void *unused )
-{
-	M_Menu_LoadGame_f ();
-}
-
-static void SaveGameFunc( void *unused )
-{
-	M_Menu_SaveGame_f();
-}
-
-static void CreditsFunc( void *unused )
-{
-	M_Menu_Credits_f();
-}
-
-static void Game_MenuInit( void )
-{
-	/*static const char *difficulty_names[] =
-	{
-		"easy",
-		"medium",
-		"hard",
-		0
-	};*/
-
-	s_game_menu.x = (int)(viddef.width * 0.50f);
-	s_game_menu.nitems = 0;
-
-	s_easy_game_action.generic.type	= MTYPE_ACTION;
-	s_easy_game_action.generic.flags  = QMF_LEFT_JUSTIFY;
-	s_easy_game_action.generic.x		= 0;
-	s_easy_game_action.generic.y		= 0;
-	s_easy_game_action.generic.name	= "easy";
-	s_easy_game_action.generic.callback = EasyGameFunc;
-
-	s_medium_game_action.generic.type	= MTYPE_ACTION;
-	s_medium_game_action.generic.flags  = QMF_LEFT_JUSTIFY;
-	s_medium_game_action.generic.x		= 0;
-	s_medium_game_action.generic.y		= 10;
-	s_medium_game_action.generic.name	= "medium";
-	s_medium_game_action.generic.callback = MediumGameFunc;
-
-	s_hard_game_action.generic.type	= MTYPE_ACTION;
-	s_hard_game_action.generic.flags  = QMF_LEFT_JUSTIFY;
-	s_hard_game_action.generic.x		= 0;
-	s_hard_game_action.generic.y		= 20;
-	s_hard_game_action.generic.name	= "hard";
-	s_hard_game_action.generic.callback = HardGameFunc;
-
-	s_blankline.generic.type = MTYPE_SEPARATOR;
-
-	s_load_game_action.generic.type	= MTYPE_ACTION;
-	s_load_game_action.generic.flags  = QMF_LEFT_JUSTIFY;
-	s_load_game_action.generic.x		= 0;
-	s_load_game_action.generic.y		= 40;
-	s_load_game_action.generic.name	= "load game";
-	s_load_game_action.generic.callback = LoadGameFunc;
-
-	s_save_game_action.generic.type	= MTYPE_ACTION;
-	s_save_game_action.generic.flags  = QMF_LEFT_JUSTIFY;
-	s_save_game_action.generic.x		= 0;
-	s_save_game_action.generic.y		= 50;
-	s_save_game_action.generic.name	= "save game";
-	s_save_game_action.generic.callback = SaveGameFunc;
-
-	s_credits_action.generic.type	= MTYPE_ACTION;
-	s_credits_action.generic.flags  = QMF_LEFT_JUSTIFY;
-	s_credits_action.generic.x		= 0;
-	s_credits_action.generic.y		= 60;
-	s_credits_action.generic.name	= "credits";
-	s_credits_action.generic.callback = CreditsFunc;
-
-	Menu_AddItem( &s_game_menu, ( void * ) &s_easy_game_action );
-	Menu_AddItem( &s_game_menu, ( void * ) &s_medium_game_action );
-	Menu_AddItem( &s_game_menu, ( void * ) &s_hard_game_action );
-	Menu_AddItem( &s_game_menu, ( void * ) &s_blankline );
-	Menu_AddItem( &s_game_menu, ( void * ) &s_load_game_action );
-	Menu_AddItem( &s_game_menu, ( void * ) &s_save_game_action );
-	Menu_AddItem( &s_game_menu, ( void * ) &s_blankline );
-	Menu_AddItem( &s_game_menu, ( void * ) &s_credits_action );
-
-	Menu_Center( &s_game_menu );
-}
-
-static void Game_MenuDraw( void )
-{
-	M_Banner( "m_banner_game" );
-	Menu_AdjustCursor( &s_game_menu, 1 );
-	Menu_Draw( &s_game_menu );
-}
-
-static const char *Game_MenuKey( int key )
-{
-	return Default_MenuKey( &s_game_menu, key );
-}
-
-static void M_Menu_Game_f (void)
-{
-	Game_MenuInit();
-	M_PushMenu( Game_MenuDraw, Game_MenuKey );
-	//m_game_cursor = 1;
-}
 
 /*
 =============================================================================
@@ -2316,172 +2163,8 @@ LOADGAME MENU
 
 #define	MAX_SAVEGAMES	15
 
-static menuframework_s	s_savegame_menu;
-
-static menuframework_s	s_loadgame_menu;
-static menuaction_s		s_loadgame_actions[MAX_SAVEGAMES];
-
 char		m_savestrings[MAX_SAVEGAMES][32];
 qboolean	m_savevalid[MAX_SAVEGAMES];
-
-static void Create_Savestrings (void)
-{
-	int		i;
-	FILE	*f;
-	char	name[MAX_OSPATH];
-
-	for (i=0 ; i<MAX_SAVEGAMES ; i++)
-	{
-		Com_sprintf (name, sizeof(name), "%s/save/save%i/server.ssv", FS_Gamedir(), i);
-		f = fopen (name, "rb");
-		if (!f)
-		{
-			strcpy (m_savestrings[i], "<EMPTY>");
-			m_savevalid[i] = false;
-		}
-		else
-		{
-			FS_Read (m_savestrings[i], sizeof(m_savestrings[i]), f);
-			fclose (f);
-			m_savevalid[i] = true;
-		}
-	}
-}
-
-static void LoadGameCallback( void *self )
-{
-	menuaction_s *a = ( menuaction_s * ) self;
-
-	if ( m_savevalid[ a->generic.localdata[0] ] )
-		Cbuf_AddText (va("load save%i\n",  a->generic.localdata[0] ) );
-	M_ForceMenuOff ();
-}
-
-static void LoadGame_MenuInit( void )
-{
-	int i;
-
-	s_loadgame_menu.x = viddef.width / 2 - 120;
-	s_loadgame_menu.y = viddef.height / 2 - 58;
-	s_loadgame_menu.nitems = 0;
-
-	Create_Savestrings();
-
-	for ( i = 0; i < MAX_SAVEGAMES; i++ )
-	{
-		s_loadgame_actions[i].generic.name			= m_savestrings[i];
-		s_loadgame_actions[i].generic.flags			= QMF_LEFT_JUSTIFY;
-		s_loadgame_actions[i].generic.localdata[0]	= i;
-		s_loadgame_actions[i].generic.callback		= LoadGameCallback;
-
-		s_loadgame_actions[i].generic.x = 0;
-		s_loadgame_actions[i].generic.y = ( i ) * 10;
-		if (i>0)	// separate from autosave
-			s_loadgame_actions[i].generic.y += 10;
-
-		s_loadgame_actions[i].generic.type = MTYPE_ACTION;
-
-		Menu_AddItem( &s_loadgame_menu, &s_loadgame_actions[i] );
-	}
-}
-
-static void LoadGame_MenuDraw( void )
-{
-	M_Banner( "m_banner_load_game" );
-//	Menu_AdjustCursor( &s_loadgame_menu, 1 );
-	Menu_Draw( &s_loadgame_menu );
-}
-
-static const char *LoadGame_MenuKey( int key )
-{
-	if ( key == K_ESCAPE || key == K_ENTER )
-	{
-		s_savegame_menu.cursor = s_loadgame_menu.cursor - 1;
-		if ( s_savegame_menu.cursor < 0 )
-			s_savegame_menu.cursor = 0;
-	}
-	return Default_MenuKey( &s_loadgame_menu, key );
-}
-
-static void M_Menu_LoadGame_f (void)
-{
-	LoadGame_MenuInit();
-	M_PushMenu( LoadGame_MenuDraw, LoadGame_MenuKey );
-}
-
-
-/*
-=============================================================================
-
-SAVEGAME MENU
-
-=============================================================================
-*/
-static menuframework_s	s_savegame_menu;
-static menuaction_s		s_savegame_actions[MAX_SAVEGAMES];
-
-static void SaveGameCallback( void *self )
-{
-	menuaction_s *a = ( menuaction_s * ) self;
-
-	Cbuf_AddText (va("save save%i\n", a->generic.localdata[0] ));
-	M_ForceMenuOff ();
-}
-
-static void SaveGame_MenuDraw( void )
-{
-	M_Banner( "m_banner_save_game" );
-	Menu_AdjustCursor( &s_savegame_menu, 1 );
-	Menu_Draw( &s_savegame_menu );
-}
-
-static void SaveGame_MenuInit( void )
-{
-	int i;
-
-	s_savegame_menu.x = viddef.width / 2 - 120;
-	s_savegame_menu.y = viddef.height / 2 - 58;
-	s_savegame_menu.nitems = 0;
-
-	Create_Savestrings();
-
-	// don't include the autosave slot
-	for ( i = 0; i < MAX_SAVEGAMES-1; i++ )
-	{
-		s_savegame_actions[i].generic.name = m_savestrings[i+1];
-		s_savegame_actions[i].generic.localdata[0] = i+1;
-		s_savegame_actions[i].generic.flags = QMF_LEFT_JUSTIFY;
-		s_savegame_actions[i].generic.callback = SaveGameCallback;
-
-		s_savegame_actions[i].generic.x = 0;
-		s_savegame_actions[i].generic.y = ( i ) * 10;
-
-		s_savegame_actions[i].generic.type = MTYPE_ACTION;
-
-		Menu_AddItem( &s_savegame_menu, &s_savegame_actions[i] );
-	}
-}
-
-static const char *SaveGame_MenuKey( int key )
-{
-	if ( key == K_ENTER || key == K_ESCAPE )
-	{
-		s_loadgame_menu.cursor = s_savegame_menu.cursor - 1;
-		if ( s_loadgame_menu.cursor < 0 )
-			s_loadgame_menu.cursor = 0;
-	}
-	return Default_MenuKey( &s_savegame_menu, key );
-}
-
-static void M_Menu_SaveGame_f (void)
-{
-	if (!Com_ServerState())
-		return;		// not playing a game
-
-	SaveGame_MenuInit();
-	M_PushMenu( SaveGame_MenuDraw, SaveGame_MenuKey );
-	Create_Savestrings ();
-}
 
 
 /*
@@ -2571,7 +2254,7 @@ static void SearchLocalGames( void )
 	M_Print( 16 + 16, 120 - 48 + 24, "please be patient." );
 
 	// the text box won't show up unless we do a buffer swap
-	re.EndFrame();
+	GLimp_EndFrame();
 
 	// send out info packets
 	CL_PingServers_f();
@@ -2841,7 +2524,7 @@ static void StartServer_MenuInit( void )
 		length = ftell(fp);
 		fseek(fp, 0, SEEK_SET);
 #endif
-		buffer = malloc( length );
+		buffer = (char *) malloc( length );
 		fread( buffer, length, 1, fp );
 	}
 
@@ -2858,7 +2541,7 @@ static void StartServer_MenuInit( void )
 	if ( nummaps == 0 )
 		Com_Error( ERR_DROP, "no maps in maps.lst\n" );
 
-	mapnames = malloc( sizeof( char * ) * ( nummaps + 1 ) );
+	mapnames = (char **) malloc( sizeof( char * ) * ( nummaps + 1 ) );
 	memset( mapnames, 0, sizeof( char * ) * ( nummaps + 1 ) );
 
 	s = buffer;
@@ -2877,7 +2560,7 @@ static void StartServer_MenuInit( void )
 		strcpy( longname, COM_Parse( &s ) );
 		Com_sprintf( scratch, sizeof( scratch ), "%s\n%s", longname, shortname );
 
-		mapnames[i] = malloc( strlen( scratch ) + 1 );
+		mapnames[i] = (char *) malloc( strlen( scratch ) + 1 );
 		strcpy( mapnames[i], scratch );
 	}
 	mapnames[nummaps] = 0;
@@ -3819,7 +3502,7 @@ static qboolean PlayerConfig_ScanDirectories( void )
 		if ( !nskins )
 			continue;
 
-		skinnames = malloc( sizeof( char * ) * ( nskins + 1 ) );
+		skinnames = (char **) malloc( sizeof( char * ) * ( nskins + 1 ) );
 		memset( skinnames, 0, sizeof( char * ) * ( nskins + 1 ) );
 
 		// copy the valid skins
@@ -4092,9 +3775,9 @@ static void PlayerConfig_MenuDraw( void )
 		memset( &entity, 0, sizeof( entity ) );
 
 		Com_sprintf( scratch, sizeof( scratch ), "players/%s/tris.md2", s_pmi[s_player_model_box.curvalue].directory );
-		entity.model = re.RegisterModel( scratch );
+		entity.model = R_RegisterModel( scratch );
 		Com_sprintf( scratch, sizeof( scratch ), "players/%s/%s.pcx", s_pmi[s_player_model_box.curvalue].directory, s_pmi[s_player_model_box.curvalue].skindisplaynames[s_player_skin_box.curvalue] );
-		entity.skin = re.RegisterSkin( scratch );
+		entity.skin = R_RegisterSkin( scratch );
 		entity.flags = RF_FULLBRIGHT;
 		entity.origin[0] = 80;
 		entity.origin[1] = 0;
@@ -4119,7 +3802,7 @@ static void PlayerConfig_MenuDraw( void )
 		M_DrawTextBox( (int)(( refdef.x ) * ( 320.0F / viddef.width ) - 8), (int)(( viddef.height / 2 ) * ( 240.0F / viddef.height) - 77), refdef.width / 8, refdef.height / 8 );
 		refdef.height += 4;
 
-		re.RenderFrame( &refdef );
+		R_RenderFrame( &refdef );
 
 		Com_sprintf( scratch, sizeof( scratch ), "/players/%s/%s_i.pcx", 
 			s_pmi[s_player_model_box.curvalue].directory,
@@ -4202,9 +3885,6 @@ M_Init
 void M_Init (void)
 {
 	Cmd_AddCommand ("menu_main", M_Menu_Main_f);
-	Cmd_AddCommand ("menu_game", M_Menu_Game_f);
-		Cmd_AddCommand ("menu_loadgame", M_Menu_LoadGame_f);
-		Cmd_AddCommand ("menu_savegame", M_Menu_SaveGame_f);
 		Cmd_AddCommand ("menu_joinserver", M_Menu_JoinServer_f);
 			Cmd_AddCommand ("menu_addressbook", M_Menu_AddressBook_f);
 		Cmd_AddCommand ("menu_startserver", M_Menu_StartServer_f);
@@ -4217,7 +3897,9 @@ void M_Init (void)
 	Cmd_AddCommand ("menu_options", M_Menu_Options_f);
 		Cmd_AddCommand ("menu_r1q2", M_Menu_R1Q2_f);
 		Cmd_AddCommand ("menu_keys", M_Menu_Keys_f);
+#if !defined(EMSCRIPTEN) || !defined(NDEBUG)
 	Cmd_AddCommand ("menu_quit", M_Menu_Quit_f);
+#endif
 }
 
 

@@ -384,7 +384,7 @@ static void FS_AddToCache (const char *path, uint32 filelen, uint32 fileseek, co
 	if (!q2_initialized)
 		return;
 
-	cache = Z_TagMalloc (sizeof(fscache_t), TAGMALLOC_FSCACHE);
+	cache = (fscache_t *) Z_TagMalloc (sizeof(fscache_t), TAGMALLOC_FSCACHE);
 	cache->filelen = filelen;
 	cache->fileseek = fileseek;
 	cache->pak = pak;
@@ -396,7 +396,7 @@ static void FS_AddToCache (const char *path, uint32 filelen, uint32 fileseek, co
 
 	strncpy (cache->filename, filename, sizeof(cache->filename)-1);
 
-	newitem = rbsearch (cache->filename, rb);
+	newitem = (void **) rbsearch (cache->filename, rb);
 	*newitem = cache;
 }
 #endif
@@ -522,7 +522,7 @@ void FS_WhereIs_f (void)
 			//r1: optimized btree search
 			pak = search->pack;
 
-			entry = rbfind (lowered, pak->rb);
+			entry = (packfile_t *) rbfind (lowered, pak->rb);
 
 			if (entry)
 			{
@@ -598,7 +598,7 @@ int EXPORT FS_FOpenFile (const char *filename, FILE **file, handlestyle_t openHa
 	}
 
 #ifdef BTREE_SEARCH
-	cache = rbfind (filename, rb);
+	cache = (fscache_t *) rbfind (filename, rb);
 	if (cache)
 	{
 		cache = *(fscache_t **)cache;
@@ -727,7 +727,7 @@ int EXPORT FS_FOpenFile (const char *filename, FILE **file, handlestyle_t openHa
 
 			if (pak->type == PAK_QUAKE)
 			{
-				entry = rbfind (lowered, pak->rb);
+				entry = (packfile_t *) rbfind (lowered, pak->rb);
 
 				if (entry)
 				{
@@ -951,7 +951,7 @@ int EXPORT FS_LoadFile (const char *path, void /*@out@*/ /*@null@*/**buffer)
 		return 0;
 	}
 
-	buf = Z_TagMalloc(len, TAGMALLOC_FSLOADFILE);
+	buf = (byte *) Z_TagMalloc(len, TAGMALLOC_FSLOADFILE);
 	*buffer = buf;
 	current_filename = path;
 	FS_Read (buf, len, h);
@@ -1036,7 +1036,7 @@ static pack_t /*@null@*/ *FS_LoadPackFile (const char *packfile, const char *ext
 		}
 
 		//newfiles = Z_TagMalloc (numpackfiles * sizeof(packfile_t), TAGMALLOC_FSLOADPAK);
-		info = Z_TagMalloc (numpackfiles * sizeof(packfile_t), TAGMALLOC_FSLOADPAK);
+		info = (packfile_t *) Z_TagMalloc (numpackfiles * sizeof(packfile_t), TAGMALLOC_FSLOADPAK);
 
 		if (fseek (packhandle, header.dirofs, SEEK_SET))
 			Com_Error (ERR_FATAL, "FS_LoadPackFile: fseek() to offset %u in %s failed. Pak file is possibly corrupt.", header.dirofs, packfile);
@@ -1044,7 +1044,7 @@ static pack_t /*@null@*/ *FS_LoadPackFile (const char *packfile, const char *ext
 		if ((int)fread (info, 1, header.dirlen, packhandle) != header.dirlen)
 			Com_Error (ERR_FATAL, "FS_LoadPackFile: Error reading packfile directory from %s (failed to read %u bytes at %u). Pak file is possibly corrupt.", packfile, header.dirofs, header.dirlen);
 
-		pack = Z_TagMalloc (sizeof (pack_t), TAGMALLOC_FSLOADPAK);
+		pack = (pack_t *) Z_TagMalloc (sizeof (pack_t), TAGMALLOC_FSLOADPAK);
 		pack->type = PAK_QUAKE;
 		pack->rb = rbinit ((int (EXPORT *)(const void *, const void *))strcmp, numpackfiles);
 
@@ -1060,7 +1060,7 @@ static pack_t /*@null@*/ *FS_LoadPackFile (const char *packfile, const char *ext
 			if (info[i].filepos + info[i].filelen >= pakLen)
 				Com_Error (ERR_FATAL, "FS_LoadPackFile: File '%.64s' in pak file %s has illegal offset %u past end of file %u. Pak file is possibly corrupt.", MakePrintable (info[i].name, 0), packfile, info[i].filepos, pakLen);
 			
-			newitem = rbsearch (info[i].name, pack->rb);
+			newitem = (void **) rbsearch (info[i].name, pack->rb);
 			*newitem = &info[i];
 		}
 
@@ -1086,9 +1086,9 @@ static pack_t /*@null@*/ *FS_LoadPackFile (const char *packfile, const char *ext
 		if (unzGetGlobalInfo (f, &zipinfo) != UNZ_OK)
 			Com_Error (ERR_FATAL, "FS_LoadPackFile: Couldn't read .zip info from '%s'", packfile);
 
-		info = Z_TagMalloc (zipinfo.number_entry * sizeof(*info), TAGMALLOC_FSLOADPAK);
+		info = (packfile_t *) Z_TagMalloc (zipinfo.number_entry * sizeof(*info), TAGMALLOC_FSLOADPAK);
 
-		pack = Z_TagMalloc (sizeof (pack_t), TAGMALLOC_FSLOADPAK);
+		pack = (pack_t *) Z_TagMalloc (sizeof (pack_t), TAGMALLOC_FSLOADPAK);
 		pack->type = PAK_ZIP;
 		pack->rb = rbinit ((int (EXPORT *)(const void *, const void *))strcmp, zipinfo.number_entry);
 
@@ -1107,13 +1107,13 @@ static pack_t /*@null@*/ *FS_LoadPackFile (const char *packfile, const char *ext
 				strcpy (info[i].name, zipFileName);
 				info[i].filepos = unzGetOffset (f);
 				info[i].filelen = fileInfo.uncompressed_size;
-				newitem = rbsearch (info[i].name, pack->rb);
+				newitem = (void **) rbsearch (info[i].name, pack->rb);
 				*newitem = &info[i];
 				i++;
 			}
 		} while (unzGoToNextFile (f) == UNZ_OK);
 
-		pack->h.zhandle = f;
+		pack->h.zhandle = (void **) f;
 		Com_Printf ("Added zpackfile %s (%i files)\n", LOG_GENERAL,  packfile, i);
 	}
 #endif
@@ -1201,7 +1201,7 @@ static void FS_LoadPaks (const char *dir, const char *ext)
 		pak = FS_LoadPackFile (pakfile, ext);
 		if (pak)
 		{
-			search = Z_TagMalloc (sizeof(searchpath_t), TAGMALLOC_SEARCHPATH);
+			search = (searchpath_t *) Z_TagMalloc (sizeof(searchpath_t), TAGMALLOC_SEARCHPATH);
 			search->pack = pak;
 			search->filename[0] = 0;
 			search->next = fs_searchpaths;
@@ -1215,7 +1215,7 @@ static void FS_LoadPaks (const char *dir, const char *ext)
 		pak = FS_LoadPackFile (filenames[i], ext);
 		if (pak)
 		{
-			search = Z_TagMalloc (sizeof(searchpath_t), TAGMALLOC_SEARCHPATH);
+			search = (searchpath_t *) Z_TagMalloc (sizeof(searchpath_t), TAGMALLOC_SEARCHPATH);
 			search->pack = pak;
 			search->filename[0] = 0;
 			search->next = fs_searchpaths;
@@ -1244,7 +1244,7 @@ static void FS_AddGameDirectory (const char *dir)
 	//
 	// add the directory to the search path
 	//
-	search = Z_TagMalloc (sizeof(searchpath_t), TAGMALLOC_SEARCHPATH);
+	search = (searchpath_t	*) Z_TagMalloc (sizeof(searchpath_t), TAGMALLOC_SEARCHPATH);
 	strcpy (search->filename, fs_gamedir);
 	search->pack = NULL;
 	search->next = fs_searchpaths;
@@ -1322,7 +1322,7 @@ qboolean FS_ExistsInGameDir (char *filename)
 			if (strncmp (pak->filename, gamedir, len))
 				continue;
 
-			entry = rbfind (lowered, pak->rb);
+			entry = (packfile_t *) rbfind (lowered, pak->rb);
 
 			if (entry)
 				return true;
@@ -1516,7 +1516,7 @@ static void FS_Link_f (void)
 	}
 
 	// create a new link
-	l = Z_TagMalloc(sizeof(*l), TAGMALLOC_LINK);
+	l = (filelink_t *) Z_TagMalloc(sizeof(*l), TAGMALLOC_LINK);
 	l->next = fs_links;
 	fs_links = l;
 	l->from = CopyString(Cmd_Argv(1), TAGMALLOC_LINK);
@@ -1548,7 +1548,7 @@ char /*@null@*/ **FS_ListFiles( char *findname, int *numfiles, uint32 musthave, 
 	nfiles++; // add space for a guard
 	*numfiles = nfiles;
 
-	list = malloc( sizeof( char * ) * nfiles );
+	list = (char **) malloc( sizeof( char * ) * nfiles );
 	memset( list, 0, sizeof( char * ) * nfiles );
 
 	s = Sys_FindFirst( findname, musthave, canthave );

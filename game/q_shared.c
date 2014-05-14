@@ -96,9 +96,7 @@ void RotatePointAroundVector( vec3_t dst, const vec3_t dir, const vec3_t point, 
 void _Q_assert (char *expression, char *function, uint32 line)
 {
 	Com_Printf ("Q_assert: Assertion '%s' failed on %s:%u\n", LOG_GENERAL, expression, function, line);
-#ifndef GAME_DLL
 	Sys_DebugBreak ();
-#endif
 }
 
 void AngleVectors (vec3_t angles, vec3_t /*@out@*//*@null@*/ forward, vec3_t /*@out@*//*@null@*/right, vec3_t /*@out@*//*@null@*/up)
@@ -266,82 +264,6 @@ void R_ConcatTransforms (float in1[3][4], float in2[3][4], float out[3][4])
 
 //int sse2_enabled = 0;
 
-#if defined _M_IX86 && !defined C_ONLY && !defined linux && !defined SSE2
-
-
-/*__declspec( naked ) void __cdecl Q_ftol2( float f, int *out )
-{
-	__asm fld dword ptr [esp+4]
-	__asm fistp dword ptr [esp+8]
-	__asm ret
-}*/
-
-__declspec( naked ) int EXPORT Q_ftol( float f )
-{
-	__asm
-	{
-		fld dword ptr [esp+4]
-		push eax
-		fistp dword ptr [esp]
-		pop eax
-		ret
-	}
-}
-
-/*__declspec( naked ) void __cdecl Q_ftolsse( float f, int *out )
-{
-	__asm movd xmm0, [esp+4]
-	__asm cvttss2si eax, xmm0
-	__asm mov [esp+8], eax
-	__asm ret
-}
-
-__declspec( naked ) void __cdecl Q_ftol( float f, int *out )
-{
-	__asm cmp sse2_enabled, 0
-	__asm jz nonsse
-	__asm call Q_ftolsse
-	__asm ret
-nonsse:
-	__asm call Q_ftol86
-	__asm ret
-}
-
-__declspec (naked) void __cdecl Q_sseinit (void)
-{
-	__asm mov eax, 1
-	__asm cpuid
-	__asm test edx, 4000000h
-	__asm jz nosse
-	__asm mov sse2_enabled, 1
-nosse:
-	__asm ret
-}*/
-
-__declspec (naked) void EXPORT Q_fastfloats (float *f, int *outptr)
-{
-	/*__asm cmp sse2_enabled, 0
-	__asm jz nonsse
-	__asm mov eax, [esp+4]
-	__asm movups xmm1, [eax]
-	__asm cvttps2dq xmm0, xmm1
-	__asm mov eax, [esp+8]
-	__asm movdqu [eax], xmm0
-	__asm ret
-nonsse:*/
-	__asm mov eax, [esp+8]
-	__asm mov ebx, [esp+4]
-
-	__asm fld dword ptr [ebx]
-	__asm fistp dword ptr [eax]
-	__asm fld dword ptr [ebx+4]
-	__asm fistp dword ptr [eax+4]
-	__asm fld dword ptr [ebx+8]
-	__asm fistp dword ptr [eax+8]
-	__asm ret
-}
-
-#else
 
 int EXPORT Q_ftol( float f )
 {
@@ -360,7 +282,6 @@ void EXPORT Q_fastfloats (float *f, int *outptr)
 	*out = (int)f;
 }*/
 
-#endif
 
 /*
 ===============
@@ -428,6 +349,7 @@ int BoxOnPlaneSide2 (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
 	return sides;
 }
 
+
 /*
 ==================
 BoxOnPlaneSide
@@ -435,7 +357,6 @@ BoxOnPlaneSide
 Returns 1, 2, or 1 + 2
 ==================
 */
-#if !id386 || defined __linux__ || defined __FreeBSD__
 int EXPORT BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
 {
 	float	dist1, dist2;
@@ -501,252 +422,7 @@ dist2 = p->normal[0]*emaxs[0] + p->normal[1]*emaxs[1] + p->normal[2]*emaxs[2];
 
 	return sides;
 }
-#else
-//#pragma warning( disable: 4035 )
 
-__declspec( naked ) int __cdecl BoxOnPlaneSide (vec3_t emins, vec3_t emaxs, struct cplane_s *p)
-{
-	//static int bops_initialized;
-	static int Ljmptab[8];
-
-	__asm
-	{
-		push esi
-		push ebx
-		
-		lea eax, Ljmptab
-
-		cmp dword ptr [eax], 0
-		je short notinitialized
-		//mov bops_initialized, 1
-			
-initialized:
-
-		mov ecx,ds:dword ptr[8+4+esp]
-		mov ebx,ds:dword ptr[8+8+esp]
-		mov edx,ds:dword ptr[8+12+esp]
-		;xor eax,eax
-		;mov al,ds:byte ptr[17+edx]
-		movzx esi, ds:byte ptr[17+edx]
-		;r1 - removed, Lerror will crash and so will illegal access, this should
-		;never happen anyway and just causes a branch
-		;cmp al,8
-		;jge Lerror
-		fld ds:dword ptr[0+edx]
-		fld st(0)
-		jmp dword ptr[eax+esi*4]
-Lcase0:
-		fmul ds:dword ptr[ebx]
-		fld ds:dword ptr[0+4+edx]
-		fxch st(2)
-		fmul ds:dword ptr[ecx]
-		fxch st(2)
-		fld st(0)
-		fmul ds:dword ptr[4+ebx]
-		fld ds:dword ptr[0+8+edx]
-		fxch st(2)
-		fmul ds:dword ptr[4+ecx]
-		fxch st(2)
-		fld st(0)
-		fmul ds:dword ptr[8+ebx]
-		fxch st(5)
-		faddp st(3),st(0)
-		fmul ds:dword ptr[8+ecx]
-		fxch st(1)
-		faddp st(3),st(0)
-		fxch st(3)
-		faddp st(2),st(0)
-		jmp short LSetSides
-Lcase1:
-		fmul ds:dword ptr[ecx]
-		fld ds:dword ptr[0+4+edx]
-		fxch st(2)
-		fmul ds:dword ptr[ebx]
-		fxch st(2)
-		fld st(0)
-		fmul ds:dword ptr[4+ebx]
-		fld ds:dword ptr[0+8+edx]
-		fxch st(2)
-		fmul ds:dword ptr[4+ecx]
-		fxch st(2)
-		fld st(0)
-		fmul ds:dword ptr[8+ebx]
-		fxch st(5)
-		faddp st(3),st(0)
-		fmul ds:dword ptr[8+ecx]
-		fxch st(1)
-		faddp st(3),st(0)
-		fxch st(3)
-		faddp st(2),st(0)
-		jmp short LSetSides
-Lcase2:
-		fmul ds:dword ptr[ebx]
-		fld ds:dword ptr[0+4+edx]
-		fxch st(2)
-		fmul ds:dword ptr[ecx]
-		fxch st(2)
-		fld st(0)
-		fmul ds:dword ptr[4+ecx]
-		fld ds:dword ptr[0+8+edx]
-		fxch st(2)
-		fmul ds:dword ptr[4+ebx]
-		fxch st(2)
-		fld st(0)
-		fmul ds:dword ptr[8+ebx]
-		fxch st(5)
-		faddp st(3),st(0)
-		fmul ds:dword ptr[8+ecx]
-		fxch st(1)
-		faddp st(3),st(0)
-		fxch st(3)
-		faddp st(2),st(0)
-		jmp short LSetSides
-Lcase3:
-		fmul ds:dword ptr[ecx]
-		fld ds:dword ptr[0+4+edx]
-		fxch st(2)
-		fmul ds:dword ptr[ebx]
-		fxch st(2)
-		fld st(0)
-		fmul ds:dword ptr[4+ecx]
-		fld ds:dword ptr[0+8+edx]
-		fxch st(2)
-		fmul ds:dword ptr[4+ebx]
-		fxch st(2)
-		fld st(0)
-		fmul ds:dword ptr[8+ebx]
-		fxch st(5)
-		faddp st(3),st(0)
-		fmul ds:dword ptr[8+ecx]
-		fxch st(1)
-		faddp st(3),st(0)
-		fxch st(3)
-		faddp st(2),st(0)
-		jmp short LSetSides
-Lcase4:
-		fmul ds:dword ptr[ebx]
-		fld ds:dword ptr[0+4+edx]
-		fxch st(2)
-		fmul ds:dword ptr[ecx]
-		fxch st(2)
-		fld st(0)
-		fmul ds:dword ptr[4+ebx]
-		fld ds:dword ptr[0+8+edx]
-		fxch st(2)
-		fmul ds:dword ptr[4+ecx]
-		fxch st(2)
-		fld st(0)
-		fmul ds:dword ptr[8+ecx]
-		fxch st(5)
-		faddp st(3),st(0)
-		fmul ds:dword ptr[8+ebx]
-		fxch st(1)
-		faddp st(3),st(0)
-		fxch st(3)
-		faddp st(2),st(0)
-		jmp short LSetSides
-Lcase5:
-		fmul ds:dword ptr[ecx]
-		fld ds:dword ptr[0+4+edx]
-		fxch st(2)
-		fmul ds:dword ptr[ebx]
-		fxch st(2)
-		fld st(0)
-		fmul ds:dword ptr[4+ebx]
-		fld ds:dword ptr[0+8+edx]
-		fxch st(2)
-		fmul ds:dword ptr[4+ecx]
-		fxch st(2)
-		fld st(0)
-		fmul ds:dword ptr[8+ecx]
-		fxch st(5)
-		faddp st(3),st(0)
-		fmul ds:dword ptr[8+ebx]
-		fxch st(1)
-		faddp st(3),st(0)
-		fxch st(3)
-		faddp st(2),st(0)
-		jmp short LSetSides
-Lcase6:
-		fmul ds:dword ptr[ebx]
-		fld ds:dword ptr[0+4+edx]
-		fxch st(2)
-		fmul ds:dword ptr[ecx]
-		fxch st(2)
-		fld st(0)
-		fmul ds:dword ptr[4+ecx]
-		fld ds:dword ptr[0+8+edx]
-		fxch st(2)
-		fmul ds:dword ptr[4+ebx]
-		fxch st(2)
-		fld st(0)
-		fmul ds:dword ptr[8+ecx]
-		fxch st(5)
-		faddp st(3),st(0)
-		fmul ds:dword ptr[8+ebx]
-		fxch st(1)
-		faddp st(3),st(0)
-		fxch st(3)
-		faddp st(2),st(0)
-		jmp short LSetSides
-Lcase7:
-		fmul ds:dword ptr[ecx]
-		fld ds:dword ptr[0+4+edx]
-		fxch st(2)
-		fmul ds:dword ptr[ebx]
-		fxch st(2)
-		fld st(0)
-		fmul ds:dword ptr[4+ecx]
-		fld ds:dword ptr[0+8+edx]
-		fxch st(2)
-		fmul ds:dword ptr[4+ebx]
-		fxch st(2)
-		fld st(0)
-		fmul ds:dword ptr[8+ecx]
-		fxch st(5)
-		faddp st(3),st(0)
-		fmul ds:dword ptr[8+ebx]
-		fxch st(1)
-		faddp st(3),st(0)
-		fxch st(3)
-		faddp st(2),st(0)
-
-		;padding for LSetsides
-		lea esp, [esp]
-		lea esp, [esp]
-LSetSides:
-		faddp st(2),st(0)
-		fcomp ds:dword ptr[12+edx]
-		xor ecx,ecx
-		fnstsw ax
-		fcomp ds:dword ptr[12+edx]
-		and ah,1
-		xor ah,1
-		add cl,ah
-		fnstsw ax
-		and ah,1
-		add ah,ah
-		add cl,ah
-		pop ebx
-		pop esi
-		mov eax,ecx
-		ret
-//Lerror:
-//		int 3
-notinitialized:
-		mov dword ptr [eax], offset Lcase0
-		mov dword ptr [eax+4], offset Lcase1
-		mov dword ptr [eax+8], offset Lcase2
-		mov dword ptr [eax+12], offset Lcase3
-		mov dword ptr [eax+16], offset Lcase4
-		mov dword ptr [eax+20], offset Lcase5
-		mov dword ptr [eax+24], offset Lcase6
-		mov dword ptr [eax+28], offset Lcase7
-		jmp initialized
-	}
-}
-//#pragma warning( default: 4035 )
-#endif
 
 /*void ClearBounds (vec3_t mins, vec3_t maxs)
 {
@@ -1587,6 +1263,10 @@ int Q_vsnprintf (char *buff, size_t len, const char *fmt, va_list va)
 	return -1;
 }
 
+
+#endif  // _WIN32
+
+
 /*int Q_snprintf (char *buff, size_t len, const char *fmt, ...)
 {
 	int ret;
@@ -1609,7 +1289,7 @@ void Q_strlwr (char *str)
 		str++;
 	}
 }
-#endif
+
 
 /*
   Copyright (C) 1996, 1997, 1998, 1999, 2000 Florian Schintke

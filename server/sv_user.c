@@ -1081,10 +1081,11 @@ static void SV_NextDownload_f (void)
 	{
 		byte		zOut[0xFFFF];
 		byte		*buff;
-		z_stream	z = {0};
+		z_stream	z;
 		int			i, j;
 		uint32		realBytes;
 		int			result;
+		memset(&z, 0, sizeof(z_stream));
 
 		z.next_out = zOut;
 		z.avail_out = sizeof(zOut);
@@ -1811,7 +1812,7 @@ const banmatch_t *VarBanMatch (varban_t *bans, const char *var, const char *resu
 {
 	banmatch_t			*match;
 	char				*matchvalue;
-	int					not;
+	int					notResult;
 
 	while (bans->next)
 	{
@@ -1827,17 +1828,17 @@ const banmatch_t *VarBanMatch (varban_t *bans, const char *var, const char *resu
 
 				matchvalue = match->matchvalue;
 
-				not = 1;
+				notResult = 1;
 
 				if (matchvalue[0] == '!')
 				{
-					not = 0;
+					notResult = 0;
 					matchvalue++;
 				}
 
 				if (matchvalue[0] == '*')
 				{
-					if ((result[0] == 0 ? 0 : 1) == not)
+					if ((result[0] == 0 ? 0 : 1) == notResult)
 						return match;
 					continue;
 				}
@@ -1857,27 +1858,27 @@ const banmatch_t *VarBanMatch (varban_t *bans, const char *var, const char *resu
 					switch (matchvalue[0])
 					{
 						case '>':
-							if ((intresult > matchint) == not)
+							if ((intresult > matchint) == notResult)
 								return match;
 							continue;
 
 						case '<':
-							if ((intresult < matchint) == not)
+							if ((intresult < matchint) == notResult)
 								return match;
 							continue;
 						
 						case '=':
-							if ((intresult == matchint) == not)
+							if ((intresult == matchint) == notResult)
 								return match;
 							continue;
 						
 						case '~':
-							if ((strstr (result, matchvalue + 1) == NULL ? 0 : 1) == not)
+							if ((strstr (result, matchvalue + 1) == NULL ? 0 : 1) == notResult)
 								return match;
 							continue;
 						
 						case '#':
-							if (!Q_stricmp (matchvalue+1, result) ==  not)
+							if (!Q_stricmp (matchvalue+1, result) ==  notResult)
 								return match;
 							continue;
 						default:
@@ -1885,7 +1886,7 @@ const banmatch_t *VarBanMatch (varban_t *bans, const char *var, const char *resu
 					}
 				}
 
-				if (!Q_stricmp (matchvalue, result) ==  not)
+				if (!Q_stricmp (matchvalue, result) ==  notResult)
 					return match;
 			}
 

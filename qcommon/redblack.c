@@ -257,7 +257,6 @@ RB_STATIC const RB_ENTRY(data_t) *
 RB_ENTRY(delete)(const RB_ENTRY(data_t) *key, struct RB_ENTRY(tree) *rbinfo)
 {
 	struct RB_ENTRY(node) *x;
-	const RB_ENTRY(data_t) * y;
 
 	x=RB_ENTRY(_traverse)(0, key, rbinfo);
 
@@ -267,16 +266,7 @@ RB_ENTRY(delete)(const RB_ENTRY(data_t) *key, struct RB_ENTRY(tree) *rbinfo)
 	}
 	else
 	{
-		y = x->key;
 		RB_ENTRY(_delete)(&rbinfo->rb_root, x);
-/*		if (rbinfo->rb_dupkey)
-		{
-#ifndef REF_GL
-			Z_Free ((void *)y);
-#else
-			free ((void *)y);
-#endif
-		}*/
 		return(NULL);
 	}
 }

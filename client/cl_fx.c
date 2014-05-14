@@ -1948,8 +1948,12 @@ void CL_FlyParticles (vec3_t origin, int count)
 
 	if (!avelocities[0][0])
 	{
-		for (i=0 ; i<NUMVERTEXNORMALS*3 ; i++)
-			avelocities[0][i] = (randomMT()&255) * 0.01f;
+		for (i = 0 ;i < NUMVERTEXNORMALS; i++) {
+			int j;
+			for (j = 0; j < 3; j++ ){
+				avelocities[i][j] = (randomMT()&255) * 0.01f;
+			}
+		}
 	}
 
 	ltime = (origin[0] + origin[1])/100.0f + time / 1000.0f;
@@ -2051,8 +2055,12 @@ void CL_BfgParticles (entity_t *ent)
 
 	if (!avelocities[0][0])
 	{
-		for (i=0 ; i<NUMVERTEXNORMALS*3 ; i++)
-			avelocities[0][i] = (randomMT()&255) * 0.01f;
+		for (i = 0; i < NUMVERTEXNORMALS; i++) {
+			int j;
+			for (j = 0; j < 3; j++) {
+				avelocities[i][j] = (randomMT()&255) * 0.01f;
+			}
+		}
 	}
 
 
@@ -2118,13 +2126,8 @@ void CL_TrapParticles (entity_t *ent)
 	vec3_t		move;
 	vec3_t		vec;
 	vec3_t		start, end;
-	int			len;
-	int			j;
-	cparticle_t	*p;
-	int			dec;
-	float		time;
 
-	time = (float)cl.time;
+	float time = (float)cl.time;
 
 	ent->origin[2]-=14;
 	FastVectorCopy (ent->origin, start);
@@ -2133,9 +2136,9 @@ void CL_TrapParticles (entity_t *ent)
 
 	FastVectorCopy (start, move);
 	VectorSubtract (end, start, vec);
-	len = (int)VectorNormalize (vec);
+	int len = (int)VectorNormalize (vec);
 
-	dec = 5;
+	int dec = 5;
 	VectorScale (vec, 5, vec);
 
 	// FIXME: this is a really silly way to have a loop
@@ -2146,7 +2149,7 @@ void CL_TrapParticles (entity_t *ent)
 		if (!free_particles)
 			return;
 
-		p = free_particles;
+		cparticle_t	*p = free_particles;
 		free_particles = p->next;
 		p->next = active_particles;
 		active_particles = p;
@@ -2158,7 +2161,7 @@ void CL_TrapParticles (entity_t *ent)
 		p->alpha = 1.0;
 		p->alphavel = -1.0f / (0.3f+frand()*0.2f);
 		p->color = 0xe0;
-		for (j=0 ; j<3 ; j++)
+		for (int j = 0 ;j < 3 ;j++)
 		{
 			p->org[j] = move[j] + crand();
 			p->vel[j] = crand()*15;

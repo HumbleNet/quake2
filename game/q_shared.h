@@ -25,7 +25,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
@@ -80,11 +82,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #pragma warning(3 : 4905)
 #pragma warning(3 : 4906)
 #pragma warning(3 : 4245)
-#endif
 //#pragma warning(disable: 4996)		// deprecated functions
 
 #pragma intrinsic(memcmp)
 //#pragma intrinsic(memset)
+#endif  // MSC_VER
 
 #if _MSC_VER >= 1400
 	#define NORETURN __declspec(noreturn)
@@ -98,20 +100,26 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	#define ceilf (float)ceil
 #endif
 
+#ifdef _MSC_VER
 #define alloca _alloca
+
+#define __builtin_unreachable() assert(false)
+#endif  // _MSC_VER
+
 #define snprintf _snprintf
 #define vsnprintf _vsnprintf
-#define	Q_strlwr _strlwr
 //#define Q_snprintf _snprintf
 #define Q_vsnprintf _vsnprintf
 #ifndef _M_AMD64
 	#define Q_stricmp _strcmpi	//odd, amd64 libc is missing this...
 	#define Q_strncasecmp _strnicmp
-#endif
+#endif  // _M_AMD64
 #define strdup _strdup
+
 #ifndef fileno
 #define fileno _fileno
-#endif
+#endif  // fileno
+
 #define strlwr _strlwr
 #define filelength _filelength
 #define stricmp _stricmp
@@ -131,7 +139,9 @@ typedef __int64 int64;
 typedef unsigned __int32 uint32;
 typedef unsigned __int16 uint16;
 typedef unsigned __int64 uint64;
+
 #else /* NON-WIN32 */
+
 #include <stdint.h>
 #define WINAPI
 #define RESTRICT
@@ -175,10 +185,22 @@ void _Q_assert (char *expression, char *function, uint32 line);
 #endif
 
 typedef unsigned char 		byte;
-typedef enum {false, true}	qboolean;
+typedef bool qboolean;
 
 //r1: set this to 1 if you have a stupid endian thingy
 #define Q_BIGENDIAN 0
+
+
+#ifdef USE_AFL
+
+
+#define crand crandom
+float crandom();
+float frand();
+
+
+#else  //  USE_AFL
+
 
 //#define random()	(randomMT() / ((float)0xFFFFFFFFU))
 
@@ -188,6 +210,10 @@ typedef enum {false, true}	qboolean;
 
 #define	frand()		(random())
 #define	crand()		(((int)randomMT() - 0x7FFFFFFF) * 0.000000000465661287307739257812f)
+
+
+#endif  //  USE_AFL
+
 
 #ifndef NULL
 #define NULL ((void *)0)
@@ -218,6 +244,18 @@ do { \
 	strncpy ((dst), (src), (len)); \
 	(dst)[(len)] = 0; \
 } while (0)
+
+
+#ifdef __clang__
+
+// clang doesn't understand externally_visible
+#define EXTERNALLY_VISIBLE __attribute__ ((visibility("default")))
+
+#else
+
+#define EXTERNALLY_VISIBLE __attribute__ ((visibility("default"), externally_visible))
+
+#endif
 
 // angle indexes
 #define	PITCH				0		// up / down
@@ -514,7 +552,7 @@ extern	unsigned int	curtime;		// time returned by last Sys_Milliseconds
 
 unsigned int		Sys_Milliseconds (void);
 void	Sys_Mkdir (char *path);
-void	Sys_DebugBreak (void);
+void	Sys_DebugBreak (void) __attribute__((noreturn));
 
 // large block stack allocation routines
 void	*Hunk_Begin (int maxsize, int precommit);
@@ -559,7 +597,7 @@ void Sys_Sleep (int msec);
 #define LOG_ANTICHEAT	0x10000
 
 // this is only here so the functions in q_shared.c and q_shwin.c can link
-NORETURN void Sys_Error (const char *error, ...) __attribute__ ((format (printf, 1, 2)));
+NORETURN void Sys_Error (const char *error, ...) __attribute__ ((format (printf, 1, 2), noreturn));
 void Com_Printf (const char *fmt, int level, ...) __attribute__ ((format (printf, 1, 3)));
 
 
@@ -799,6 +837,18 @@ typedef struct
 } pmove_state_t;
 
 
+#define PMOVE_STATE_EMPTY \
+	{ \
+	  PM_NORMAL \
+	, { 0, 0, 0 } \
+	, { 0, 0, 0 } \
+	, 0 \
+	, 0 \
+	, 0 \
+	, { 0, 0, 0 } \
+	}
+
+
 //
 // button bits
 //
@@ -942,6 +992,7 @@ typedef struct
 #define RF_SHELL_RED		1024
 #define	RF_SHELL_GREEN		2048
 #define RF_SHELL_BLUE		4096
+#define RF_NOSHADOW			8192	/* don't draw a shadow */
 
 //ROGUE
 #define RF_IR_VISIBLE		0x00008000		// 32768
@@ -1532,6 +1583,28 @@ typedef struct
 
 	int16		stats[MAX_STATS];		// fast status bar updates
 } player_state_t;
+
+
+#define PLAYER_STATE_EMPTY \
+	{ \
+	  PMOVE_STATE_EMPTY \
+	, { 0.0f, 0.0f, 0.0f } \
+	, { 0.0f, 0.0f, 0.0f } \
+	, { 0.0f, 0.0f, 0.0f } \
+	, { 0.0f, 0.0f, 0.0f } \
+	, { 0.0f, 0.0f, 0.0f } \
+	, 0 \
+	, 0 \
+	, { 0.0f, 0.0f, 0.0f, 0.0f } \
+	, 0.0f \
+	, 0 \
+	, { 0, 0, 0, 0, 0, 0, 0, 0 \
+	  , 0, 0, 0, 0, 0, 0, 0, 0 \
+	  , 0, 0, 0, 0, 0, 0, 0, 0 \
+	  , 0, 0, 0, 0, 0, 0, 0, 0 \
+	  } \
+	}
+
 
 // ==================
 // PGM 

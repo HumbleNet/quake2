@@ -261,7 +261,7 @@ void Com_Printf (const char *fmt, int level, ...)
 #endif
 
 	// also echo to debugging console
-#ifndef NO_SERVER
+#if !(defined(EMSCRIPTEN) && defined(NDEBUG))
 		Sys_ConsoleOutput (msg);
 #endif
 	}
@@ -380,7 +380,7 @@ A Com_Printf that only shows up if the "developer" cvar is set
 */
 void _Com_DPrintf (char const *fmt, ...)
 {
-#if !(__STDC_VERSION__ == 199901L || _MSC_VER >= 1400 && !defined _M_AMD64)
+#if !((__STDC_VERSION__ == 199901L || _MSC_VER >= 1400 && !defined _M_AMD64) || defined(__GNUC__))
 	if (!developer->intvalue)
 	{
 		return;
@@ -581,7 +581,7 @@ void MSG_WriteChar (int c)
 #endif*/
 	Q_assert (!(c < -128 || c > 127));
 
-	buf = SZ_GetSpace (&msgbuff, 1);
+	buf = (byte *) SZ_GetSpace (&msgbuff, 1);
 	buf[0] = c;
 }
 
@@ -600,7 +600,7 @@ void MSG_BeginWriting (int c)
 	memset (message_buff, 0xcc, sizeof(message_buff));
 #endif
 
-	buf = SZ_GetSpace (&msgbuff, 1);
+	buf = (byte *) SZ_GetSpace (&msgbuff, 1);
 	buf[0] = c;
 }
 
@@ -614,7 +614,7 @@ void MSG_WriteByte (int c)
 #endif*/
 	Q_assert (!(c < 0 || c > 255));
 
-	buf = SZ_GetSpace (&msgbuff, 1);
+	buf = (byte *) SZ_GetSpace (&msgbuff, 1);
 	buf[0] = c;
 }
 
@@ -629,7 +629,7 @@ void MSG_WriteShort (int c)
 	//XXX: unsigned shorts are written here too...
 	//Q_assert (!(c < ((int16)0x8000) || c > (int16)0x7fff));
 
-	buf = SZ_GetSpace (&msgbuff, 2);
+	buf = (byte *) SZ_GetSpace (&msgbuff, 2);
 	buf[0] = c&0xff;
 	buf[1] = (c>>8) &0xff;
 }
@@ -638,7 +638,7 @@ void SZ_WriteShort (sizebuf_t *sbuf, int c)
 {
 	byte	*buf;
 
-	buf = SZ_GetSpace (sbuf, 2);
+	buf = (byte *) SZ_GetSpace (sbuf, 2);
 	buf[0] = c&0xff;
 	buf[1] = (c>>8) &0xff;
 }
@@ -647,7 +647,7 @@ void SZ_WriteLong (sizebuf_t *sbuf, int c)
 {
 	byte	*buf;
 	
-	buf = SZ_GetSpace (sbuf, 4);
+	buf = (byte *) SZ_GetSpace (sbuf, 4);
 	buf[0] = c&0xff;
 	buf[1] = (c>>8)&0xff;
 	buf[2] = (c>>16)&0xff;
@@ -660,7 +660,7 @@ void SZ_WriteByte (sizebuf_t *sbuf, int c)
 
 	Q_assert (!(c < 0 || c > 255));
 
-	buf = SZ_GetSpace (sbuf, 1);
+	buf = (byte *) SZ_GetSpace (sbuf, 1);
 	buf[0] = c;
 }
 
@@ -668,7 +668,7 @@ void MSG_WriteLong (int c)
 {
 	byte	*buf;
 	
-	buf = SZ_GetSpace (&msgbuff, 4);
+	buf = (byte *) SZ_GetSpace (&msgbuff, 4);
 	buf[0] = c&0xff;
 	buf[1] = (c>>8)&0xff;
 	buf[2] = (c>>16)&0xff;
@@ -794,7 +794,7 @@ void MSG_EndWrite (messagelist_t *out)
 #ifndef NPROFILE
 		msg_malloc_hits++;
 #endif
-		out->data = malloc (msgbuff.cursize);
+		out->data = (byte *) malloc (msgbuff.cursize);
 	}
 	else
 	{
@@ -1050,10 +1050,10 @@ int MSG_ReadLong (sizebuf_t *msg_read)
 	if (msg_read->readcount+4 > msg_read->cursize)
 		c = -1;
 	else
-		c = msg_read->data[msg_read->readcount]
-		+ (msg_read->data[msg_read->readcount+1]<<8)
-		+ (msg_read->data[msg_read->readcount+2]<<16)
-		+ (msg_read->data[msg_read->readcount+3]<<24);
+		c = ((unsigned int) msg_read->data[msg_read->readcount])
+		+ (((unsigned int) msg_read->data[msg_read->readcount+1])<<8)
+		+ (((unsigned int) msg_read->data[msg_read->readcount+2])<<16)
+		+ (((unsigned int) msg_read->data[msg_read->readcount+3])<<24);
 	
 	msg_read->readcount += 4;
 	
@@ -1454,7 +1454,7 @@ char *CopyString (const char *in, int tag)
 {
 	char	*out;
 	
-	out = Z_TagMalloc ((int)strlen(in)+1, tag);
+	out = (char *) Z_TagMalloc ((int)strlen(in)+1, tag);
 	strcpy (out, in);
 	return out;
 }
@@ -1535,7 +1535,7 @@ typedef struct z_memloc_s
 
 static z_memloc_t	z_game_locations;
 
-static zhead_t	z_chain = {0};
+static zhead_t	z_chain = { NULL, NULL, 0, 0, 0, NULL };
 
 static long		z_count = 0;
 static long		z_bytes = 0;
@@ -1770,7 +1770,7 @@ RESTRICT void * EXPORT Z_TagMallocDebug (int size, int tag)
 
 	size++;
 
-	z = malloc(size);
+	z = (zhead_t *) malloc(size);
 
 	if (!z)
 		Com_Error (ERR_DIE, "Z_TagMalloc: Out of memory. Couldn't allocate %i bytes for %s (already %li bytes in %li blocks)", size, tagmalloc_tags[tag].name, z_bytes, z_count);
@@ -1790,9 +1790,9 @@ RESTRICT void * EXPORT Z_TagMallocDebug (int size, int tag)
 	z->tag = tag;
 	z->size = size;
 
-#if defined _WIN32
+#if defined _MSC_VER
 	z->allocationLocation = _ReturnAddress ();
-#elif defined LINUX
+#elif (defined __GNUC__) && !defined(EMSCRIPTEN)
 	z->allocationLocation = __builtin_return_address (0);
 #else
 	//FIXME: other OSes/CCs
@@ -1821,9 +1821,9 @@ RESTRICT void * EXPORT Z_TagMallocRelease (int size, int tag)
 	//malloc can crash if negative size is passed, woops.
 	if (size < 0)
 		Com_Error (ERR_DIE, "Z_TagMalloc: Illegal allocation size of %d bytes from %p for tag %d", size,
-#if defined _WIN32
-		_ReturnAddress (),
-#elif defined LINUX
+#if defined _MSC_VER
+		_ReturnAddress(),
+#elif (defined __GNUC__) && !defined(EMSCRIPTEN)
 		__builtin_return_address (0), 
 #else
 		NULL,
@@ -1831,13 +1831,13 @@ RESTRICT void * EXPORT Z_TagMallocRelease (int size, int tag)
 		tag);
 
 	size = size + sizeof(zhead_t);
-	z = malloc(size);
+	z = (zhead_t *) malloc(size);
 
 	if (!z)
 		Com_Error (ERR_DIE, "Z_TagMalloc: Out of memory. Couldn't allocate %i bytes for tag %d from %p (already %li bytes in %li blocks)", size, tag,
-#if defined _WIN32
+#if defined _MSC_VER
 		_ReturnAddress (),
-#elif defined LINUX
+#elif (defined __GNUC__) && !defined(EMSCRIPTEN)
 		__builtin_return_address (0), 
 #else
 		NULL,
@@ -1851,9 +1851,9 @@ RESTRICT void * EXPORT Z_TagMallocRelease (int size, int tag)
 
 	z_bytes += size;
 
-#if defined _WIN32
+#if defined _MSC_VER
 	z->allocationLocation = _ReturnAddress ();
-#elif defined LINUX
+#elif (defined __GNUC__) && !defined(EMSCRIPTEN)
 	z->allocationLocation = __builtin_return_address (0);
 #else
 	//FIXME: other OSes/CCs
@@ -1879,9 +1879,9 @@ RESTRICT void * EXPORT Z_TagMallocGame (int size, int tag)
 
 	void		*retAddr;
 
-#if defined _WIN32
-	retAddr = _ReturnAddress ();
-#elif defined LINUX
+#if defined _MSC_VER
+	retAddr = _ReturnAddress();
+#elif (defined __GNUC__) && !defined(EMSCRIPTEN)
 	retAddr = __builtin_return_address (0);
 #else
 	//FIXME: other OSes/CCs
@@ -1905,10 +1905,13 @@ RESTRICT void * EXPORT Z_TagMallocGame (int size, int tag)
 		}
 	}
 
-	b = Z_TagMalloc (size+4, tag);
+	b = (byte *) Z_TagMalloc (size+4, tag);
 
 	memset (b, 0, size);
-	*(int *)(b + size) = 0xFDFEFDFE;
+	b[size + 0] = 0xFE;
+	b[size + 1] = 0xFD;
+	b[size + 2] = 0xFE;
+	b[size + 3] = 0xFD;
 
 	if (tag == TAG_LEVEL)
 		z_level_allocs++;
@@ -1917,7 +1920,7 @@ RESTRICT void * EXPORT Z_TagMallocGame (int size, int tag)
 
 	loc = &z_game_locations;
 	last = loc->next;
-	newentry = malloc (sizeof(*loc));
+	newentry = (z_memloc_t *) malloc (sizeof(*loc));
 	if (!newentry)
 		Com_Error (ERR_DIE, "Z_TagMallocGame: Out of memory.");
 
@@ -1937,9 +1940,9 @@ void EXPORT Z_FreeGame (void *buf)
 
 	void		*retAddr;
 
-#if defined _WIN32
-	retAddr = _ReturnAddress ();
-#elif defined LINUX
+#if defined _MSC_VER
+	retAddr = _ReturnAddress();
+#elif (defined __GNUC__) && !defined(EMSCRIPTEN)
 	retAddr = __builtin_return_address (0);
 #else
 	//FIXME: other OSes/CCs
@@ -1953,7 +1956,11 @@ void EXPORT Z_FreeGame (void *buf)
 		loc = loc->next;
 		if (buf == loc->address)
 		{
-			if (*(int *)((byte *)buf + loc->size) != 0xFDFEFDFE)
+			unsigned int magic = ((byte *)loc->address)[loc->size + 3];
+			magic = (magic << 8) + ((byte *)loc->address)[loc->size + 2];
+			magic = (magic << 8) + ((byte *)loc->address)[loc->size + 1];
+			magic = (magic << 8) + ((byte *)loc->address)[loc->size + 0];
+			if (magic != 0xFDFEFDFE)
 			{
 				Com_Printf ("Memory corruption detected within the Game DLL. Please contact the mod author and inform them that they are not managing dynamically allocated memory correctly.\n", LOG_GENERAL);
 				Com_Error (ERR_DIE, "Z_FreeGame: Game DLL corrupted a memory block of size %d at %p (allocated %u ms ago from code at %p), detected during free at %p", loc->size, loc->address, curtime - loc->time, loc->allocationLocation, retAddr);
@@ -1992,7 +1999,11 @@ void EXPORT Z_FreeTagsGame (int tag)
 	{
 		loc = loc->next;
 
-		if (*(int *)((byte *)loc->address + loc->size) != 0xFDFEFDFE)
+		unsigned int magic = ((byte *)loc->address)[loc->size + 3];
+		magic = (magic << 8) + ((byte *)loc->address)[loc->size + 2];
+		magic = (magic << 8) + ((byte *)loc->address)[loc->size + 1];
+		magic = (magic << 8) + ((byte *)loc->address)[loc->size + 0];
+		if (magic != 0xFDFEFDFE)
 		{
 			Com_Printf ("Memory corruption detected within the Game DLL. Please contact the mod author and inform them that they are not managing dynamically allocated memory correctly.\n", LOG_GENERAL);
 			Com_Error (ERR_DIE, "Z_FreeTagsGame: Game DLL corrupted a memory block of size %d at %p (allocated %u ms ago from code at %p)", loc->size, loc->address, curtime - loc->time, loc->allocationLocation);
@@ -2006,7 +2017,7 @@ void EXPORT Z_FreeTagsGame (int tag)
 			Z_FreeGame ((void *)(z+1));
 	}
 
-	Z_Verify (va("Z_FreeTags %d (GAME): END", tag));
+	Z_Verify("Z_FreeTags %d (GAME): END", tag);
 }
 
 
@@ -2264,7 +2275,16 @@ void Qcommon_Init (int argc, char **argv)
 	if (setjmp (abortframe) )
 		Sys_Error ("Error during initialization");
 
+#ifdef USE_AFL
+
+	// deterministic fuzzing
+	seedMT(0x12345678);
+
+#else  // USE_AFL
+
 	seedMT((uint32)time(0));
+
+#endif   // USE_AFL
 
 	SZ_Init (&msgbuff, message_buff, sizeof(message_buff));
 
@@ -2444,15 +2464,14 @@ void Qcommon_Init (int argc, char **argv)
 Qcommon_Frame
 =================
 */
-void Qcommon_Frame (int msec)
+void Qcommon_Frame (int msec_)
 {
 #ifndef NO_SERVER
 	char *s;
 #endif
 
-#ifndef DEDICATED_ONLY
-	int		time_before = 0, time_between = 0, time_after;
-#endif
+	// this must be volatile because setjmp/longjmp might clobber it
+	volatile int msec = msec_;
 
 	if (setjmp (abortframe) )
 		return;			// an ERR_DROP was thrown
@@ -2532,6 +2551,8 @@ void Qcommon_Frame (int msec)
 	//Cbuf_Execute ();
 
 #ifndef DEDICATED_ONLY
+	int		time_before = 0, time_between = 0, time_after;
+
 	if (host_speeds->intvalue)
 		time_before = Sys_Milliseconds ();
 #endif

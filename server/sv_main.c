@@ -1727,13 +1727,13 @@ gotnewcl:
 	newcl->protocol = protocol;
 	newcl->state = cs_connected;
 
-	newcl->messageListData = Z_TagMalloc (sizeof(messagelist_t) * MAX_MESSAGES_PER_LIST, TAGMALLOC_CL_MESSAGES);
+	newcl->messageListData = (messagelist_t *) Z_TagMalloc (sizeof(messagelist_t) * MAX_MESSAGES_PER_LIST, TAGMALLOC_CL_MESSAGES);
 	memset (newcl->messageListData, 0, sizeof(messagelist_t) * MAX_MESSAGES_PER_LIST);
 
 	newcl->msgListEnd = newcl->msgListStart = newcl->messageListData;
 	newcl->msgListStart->data = NULL;
 
-	newcl->lastlines = Z_TagMalloc (sizeof(entity_state_t) * MAX_EDICTS, TAGMALLOC_CL_BASELINES);
+	newcl->lastlines = (entity_state_t *) Z_TagMalloc (sizeof(entity_state_t) * MAX_EDICTS, TAGMALLOC_CL_BASELINES);
 	//memset (newcl->lastlines, 0, sizeof(entity_state_t) * MAX_EDICTS);
 
 	//r1: per client baselines are now used
@@ -1780,7 +1780,7 @@ void Blackhole (netadr_t *from, qboolean isAutomatic, int mask, int method, cons
 	while (temp->next)
 		temp = temp->next;
 
-	temp->next = Z_TagMalloc(sizeof(blackhole_t), TAGMALLOC_BLACKHOLE);
+	temp->next = (blackhole_t *) Z_TagMalloc(sizeof(blackhole_t), TAGMALLOC_BLACKHOLE);
 	temp = temp->next;
 
 	temp->next = NULL;
@@ -1893,10 +1893,7 @@ static void SVC_RemoteCommand (void)
 	}
 	else
 	{
-		qboolean	endRedir;
-
 		remaining[0] = 0;
-		endRedir = true;
 
 		//hack to allow clients to send rcon set commands properly
 		if (!Q_stricmp (Cmd_Argv(2), "set"))
@@ -1924,24 +1921,6 @@ static void SVC_RemoteCommand (void)
 
 			Com_sprintf (remaining, sizeof(remaining), "set %s \"%s\"%s", Cmd_Argv(3), setvar, serverinfo ? " s" : "");
 		}
-		//FIXME: This is a nice idea, but currently redirected output blocks until full buffer occurs, making it useless.
-		/*else if (!Q_stricmp (Cmd_Argv(2), "monitor"))
-		{
-			Sys_ConsoleOutput ("Console monitor request from ");
-			Sys_ConsoleOutput (NET_AdrToString (&net_from));
-			Sys_ConsoleOutput ("\n");
-			if (!Q_stricmp (Cmd_Argv(3), "on"))
-			{
-				Com_Printf ("Console monitor enabled.\n", LOG_SERVER);
-				return;
-			}
-			else
-			{
-				Com_Printf ("Console monitor disabled.\n", LOG_SERVER);
-				Com_EndRedirect (true);
-				return;
-			}
-		}*/
 		else
 		{
 			Q_strncpy (remaining, Cmd_Args2(2), sizeof(remaining)-1);
@@ -3718,7 +3697,7 @@ Called when each game quits,
 before Sys_Quit or Sys_Error
 ================
 */
-void SV_Shutdown (char *finalmsg, qboolean reconnect, qboolean crashing)
+void SV_Shutdown (const char *finalmsg, qboolean reconnect, qboolean crashing)
 {
 	if (svs.clients)
 		SV_FinalMessage (finalmsg, reconnect);

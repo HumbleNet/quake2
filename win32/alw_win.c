@@ -18,7 +18,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
-#ifdef USE_OPENAL
+
+#ifdef _WIN32
+
+
+#define WIN32_LEAN_AND_MEAN
+// before qcommon.h or mingw-w64 explodes
+#include <windows.h>
 
 #include "../qcommon/qcommon.h"
 #include "winquake.h"
@@ -26,7 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 alConfig_t	alConfig;
-alwState_t	alwState;
+alState_t	alwState;
 
 
 /*
@@ -235,7 +241,8 @@ void ALW_Shutdown (void){
 	QAL_Shutdown();
 
 	memset(&alConfig, 0, sizeof(alConfig_t));
-	memset(&alwState, 0, sizeof(alwState_t));
+	memset(&alwState, 0, sizeof(alState_t));
 }
 
-#endif
+
+#endif  // _WIN32

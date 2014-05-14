@@ -1,5 +1,11 @@
 // net_wins.c
 
+#ifndef _WIN32
+
+#ifndef EMSCRIPTEN
+#define SOCK_EXTENDED_ERR 1
+#endif  // EMSCRIPTEN
+
 #include "../qcommon/qcommon.h"
 
 #include <unistd.h>
@@ -13,8 +19,9 @@
 #include <sys/uio.h>
 #include <errno.h>
 
-#include <linux/types.h>
+#ifdef SOCK_EXTENDED_ERR
 #include <linux/errqueue.h>
+#endif
 
 #ifdef NeXT
 #include <libc.h>
@@ -195,7 +202,9 @@ int	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
 
 		char		cbuf[1024];
 
+#ifdef SOCK_EXTENDED_ERR
 		struct sock_extended_err *e;
+#endif  // SOCK_EXTENDED_ERR
 
 		err = errno;
 
@@ -250,6 +259,7 @@ int	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
 			//linux 2.2 (maybe others) fails to properly fill in the msg_name structure.
 			Com_DPrintf ("(msgname) family %d, host: %s, port: %d, flags: %d\n", from.sin_family, inet_ntoa (from.sin_addr), from.sin_port, msg.msg_flags);
 
+#ifdef SOCK_EXTENDED_ERR
 			e = NULL;
 
 			for (cmsg = CMSG_FIRSTHDR (&msg); cmsg; cmsg = CMSG_NXTHDR (&msg, cmsg))
@@ -307,6 +317,7 @@ int	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
 					Com_Printf ("NET_GetPacket: %s from %s\n", LOG_NET, strerror(e->ee_errno), NET_AdrToString (net_from));
 					continue;
 			}
+#endif  // SOCK_EXTENDED_ERR
 		}
 
 		//errno = err;
@@ -448,7 +459,7 @@ int NET_IPSocket (char *net_interface, int port)
 
 	address.sin_family = AF_INET;
 
-	if( bind (newsocket, (void *)&address, sizeof(address)) == -1)
+	if( bind (newsocket, (struct sockaddr *) &address, sizeof(address)) == -1)
 	{
 		close (newsocket);
 		Com_Printf ("UDP_OpenSocket: Couldn't bind to UDP port %d: %s\n", LOG_NET, port, NET_ErrorString());
@@ -484,3 +495,4 @@ char *NET_ErrorString (void)
 }
 
 
+#endif  // !_WIN32

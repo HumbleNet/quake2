@@ -41,7 +41,7 @@ extern viddef_t viddef;
 #define VID_WIDTH viddef.width
 #define VID_HEIGHT viddef.height
 
-#define Draw_Char re.DrawChar
+#define Draw_Char R_DrawChar
 #define Draw_Fill re.DrawFill
 
 void Action_DoEnter( menuaction_s *a )
@@ -290,7 +290,7 @@ void Menu_AdjustCursor( menuframework_s *m, int dir )
 	*/
 	if ( m->cursor >= 0 && m->cursor < m->nitems )
 	{
-		if ( ( citem = Menu_ItemAtCursor( m ) ) != 0 )
+		if ( ( citem = (menucommon_s *) Menu_ItemAtCursor( m ) ) != 0 )
 		{
 			if ( citem->type != MTYPE_SEPARATOR )
 				return;
@@ -305,7 +305,7 @@ void Menu_AdjustCursor( menuframework_s *m, int dir )
 	{
 		for (;;)
 		{
-			citem = Menu_ItemAtCursor( m );
+			citem = (menucommon_s *) Menu_ItemAtCursor( m );
 			if ( citem )
 				if ( citem->type != MTYPE_SEPARATOR )
 					break;
@@ -318,7 +318,7 @@ void Menu_AdjustCursor( menuframework_s *m, int dir )
 	{
 		for (;;)
 		{
-			citem = Menu_ItemAtCursor( m );
+			citem = (menucommon_s *) Menu_ItemAtCursor( m );
 			if ( citem )
 				if ( citem->type != MTYPE_SEPARATOR )
 					break;
@@ -372,7 +372,7 @@ void Menu_Draw( menuframework_s *menu )
 		}
 	}
 
-	item = Menu_ItemAtCursor( menu );
+	item = (menucommon_s *) Menu_ItemAtCursor( menu );
 
 	if ( item && item->cursordraw )
 	{

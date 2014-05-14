@@ -182,39 +182,39 @@ CL_RegisterTEntModels
 */
 void CL_RegisterTEntModels (void)
 {
-	cl_mod_explode = re.RegisterModel ("models/objects/explode/tris.md2");
-	cl_mod_smoke = re.RegisterModel ("models/objects/smoke/tris.md2");
-	cl_mod_flash = re.RegisterModel ("models/objects/flash/tris.md2");
-	cl_mod_parasite_segment = re.RegisterModel ("models/monsters/parasite/segment/tris.md2");
-	cl_mod_grapple_cable = re.RegisterModel ("models/ctf/segment/tris.md2");
-	cl_mod_parasite_tip = re.RegisterModel ("models/monsters/parasite/tip/tris.md2");
-	cl_mod_explo4 = re.RegisterModel ("models/objects/r_explode/tris.md2");
-	cl_mod_bfg_explo = re.RegisterModel ("sprites/s_bfg2.sp2");
-	cl_mod_powerscreen = re.RegisterModel ("models/items/armor/effect/tris.md2");
+	cl_mod_explode = R_RegisterModel ("models/objects/explode/tris.md2");
+	cl_mod_smoke = R_RegisterModel ("models/objects/smoke/tris.md2");
+	cl_mod_flash = R_RegisterModel ("models/objects/flash/tris.md2");
+	cl_mod_parasite_segment = R_RegisterModel ("models/monsters/parasite/segment/tris.md2");
+	cl_mod_grapple_cable = R_RegisterModel ("models/ctf/segment/tris.md2");
+	cl_mod_parasite_tip = R_RegisterModel ("models/monsters/parasite/tip/tris.md2");
+	cl_mod_explo4 = R_RegisterModel ("models/objects/r_explode/tris.md2");
+	cl_mod_bfg_explo = R_RegisterModel ("sprites/s_bfg2.sp2");
+	cl_mod_powerscreen = R_RegisterModel ("models/items/armor/effect/tris.md2");
 
 	//r1: also register localent models
-	le_mod_debris1 = re.RegisterModel ("models/objects/debris2/tris.md2");
-	le_mod_gibs = re.RegisterModel ("models/objects/gibs/sm_meat/tris.md2");
-	//le_mod_debris2 = re.RegisterModel ("models/objects/debris2/tris.md2");
-	//le_mod_debris3 = re.RegisterModel ("models/objects/debris3/tris.md2");
+	le_mod_debris1 = R_RegisterModel ("models/objects/debris2/tris.md2");
+	le_mod_gibs = R_RegisterModel ("models/objects/gibs/sm_meat/tris.md2");
+	//le_mod_debris2 = R_RegisterModel ("models/objects/debris2/tris.md2");
+	//le_mod_debris3 = R_RegisterModel ("models/objects/debris3/tris.md2");
 
 	//r1: why are these being reigstered?
 	/*
-re.RegisterModel ("models/objects/laser/tris.md2");
-re.RegisterModel ("models/objects/grenade2/tris.md2");
-re.RegisterModel ("models/weapons/v_machn/tris.md2");
-re.RegisterModel ("models/weapons/v_handgr/tris.md2");
-re.RegisterModel ("models/weapons/v_shotg2/tris.md2");
-re.RegisterModel ("models/objects/gibs/bone/tris.md2");
-re.RegisterModel ("models/objects/gibs/sm_meat/tris.md2");
-re.RegisterModel ("models/objects/gibs/bone2/tris.md2");
+R_RegisterModel ("models/objects/laser/tris.md2");
+R_RegisterModel ("models/objects/grenade2/tris.md2");
+R_RegisterModel ("models/weapons/v_machn/tris.md2");
+R_RegisterModel ("models/weapons/v_handgr/tris.md2");
+R_RegisterModel ("models/weapons/v_shotg2/tris.md2");
+R_RegisterModel ("models/objects/gibs/bone/tris.md2");
+R_RegisterModel ("models/objects/gibs/sm_meat/tris.md2");
+R_RegisterModel ("models/objects/gibs/bone2/tris.md2");
 // RAFAEL
-// re.RegisterModel ("models/objects/blaser/tris.md2");
+// R_RegisterModel ("models/objects/blaser/tris.md2");
 
-re.RegisterPic ("w_machinegun");
-re.RegisterPic ("a_bullets");
-re.RegisterPic ("i_health");
-re.RegisterPic ("a_grenades");*/
+Draw_FindPic ("w_machinegun");
+Draw_FindPic ("a_bullets");
+Draw_FindPic ("i_health");
+Draw_FindPic ("a_grenades");*/
 //ROGUE
 }	
 
@@ -447,7 +447,7 @@ void CL_ParsePlayerBeam (int tempent)
 	// PMM - network optimization
 	if (!cl_mod_heatbeam)
 	{
-		cl_mod_heatbeam = re.RegisterModel ("models/proj/beam/tris.md2");
+		cl_mod_heatbeam = R_RegisterModel ("models/proj/beam/tris.md2");
 		//if (!cl_mod_heatbeam)
 		//{
 		//	Com_Error (ERR_DROP, "Couldn't load models/proj/beam/tris.md2");
@@ -1012,7 +1012,7 @@ void CL_ParseTEnt (void)
 		ex = CL_AllocExplosion ();
 		FastVectorCopy (pos, ex->ent.origin);
 		ex->type = ex_poly;
-		ex->ent.flags = RF_FULLBRIGHT;
+		ex->ent.flags = RF_FULLBRIGHT | RF_NOSHADOW;
 		ex->start = cl.frame.servertime - 100.0f;
 		ex->light = 350;
 		ex->lightcolor[0] = 1.0;
@@ -1037,7 +1037,7 @@ void CL_ParseTEnt (void)
 		ex = CL_AllocExplosion ();
 		FastVectorCopy (pos, ex->ent.origin);
 		ex->type = ex_poly;
-		ex->ent.flags = RF_FULLBRIGHT;
+		ex->ent.flags = RF_FULLBRIGHT | RF_NOSHADOW;
 		ex->start = cl.frame.servertime - 100.0f;
 		ex->light = 350;
 		ex->lightcolor[0] = 1.0; 
@@ -1064,7 +1064,7 @@ void CL_ParseTEnt (void)
 		ex = CL_AllocExplosion ();
 		FastVectorCopy (pos, ex->ent.origin);
 		ex->type = ex_poly;
-		ex->ent.flags = RF_FULLBRIGHT;
+		ex->ent.flags = RF_FULLBRIGHT | RF_NOSHADOW;
 		ex->start = cl.frame.servertime - 100.0f;
 		ex->light = 350;
 		ex->lightcolor[0] = 1.0;
@@ -1079,7 +1079,7 @@ void CL_ParseTEnt (void)
 		{
 			if (!cl_mod_explo4_big)
 			{
-				cl_mod_explo4_big = re.RegisterModel ("models/objects/r_explode2/tris.md2");
+				cl_mod_explo4_big = R_RegisterModel ("models/objects/r_explode2/tris.md2");
 				//if (!cl_mod_explo4_big)
 				//	Com_Error (ERR_DROP, "Couldn't load models/objects/r_explode2/tris.md2");
 			}
@@ -1105,7 +1105,7 @@ void CL_ParseTEnt (void)
 		ex = CL_AllocExplosion ();
 		FastVectorCopy (pos, ex->ent.origin);
 		ex->type = ex_poly;
-		ex->ent.flags = RF_FULLBRIGHT;
+		ex->ent.flags = RF_FULLBRIGHT | RF_NOSHADOW;
 		ex->start = cl.frame.servertime - 100.0f;
 		ex->light = 350;
 		ex->lightcolor[0] = 0.0;
@@ -1267,7 +1267,7 @@ void CL_ParseTEnt (void)
 
 		if (!cl_mod_lightning)
 		{
-			cl_mod_lightning = re.RegisterModel ("models/proj/lightning/tris.md2");
+			cl_mod_lightning = R_RegisterModel ("models/proj/lightning/tris.md2");
 			//if (!cl_mod_lightning)
 			//	Com_Error (ERR_DROP, "Couldn't load models/proj/lightning/tris.md2");
 		}
@@ -1293,7 +1293,7 @@ void CL_ParseTEnt (void)
 		ex = CL_AllocExplosion ();
 		FastVectorCopy (pos, ex->ent.origin);
 		ex->type = ex_poly;
-		ex->ent.flags = RF_FULLBRIGHT;
+		ex->ent.flags = RF_FULLBRIGHT | RF_NOSHADOW;
 		ex->start = cl.frame.servertime - 100.0f;
 		ex->light = 350;
 		ex->lightcolor[0] = 1.0;

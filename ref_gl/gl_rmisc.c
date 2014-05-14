@@ -24,8 +24,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 #include "gl_local.h"
+
+#ifdef USE_JPEG
 #include <jpeglib.h>
+#endif  // USE_JPEG
+
+
+#ifdef USE_PNG
 #include <png.h>
+#endif  // USE_PNG
+
+
 
 /*
 ==================
@@ -96,35 +105,15 @@ void R_InitParticleTexture (void)
 ============================================================================== 
 */ 
 
-/*
-============
-FS_CreatePath
-
-Creates any directories needed to store the given filename
-============
-*/
-void	FS_CreatePath (char *path)
-{
-	char	*ofs;
-	
-	for (ofs = path+1 ; *ofs ; ofs++)
-	{
-		if (*ofs == '/')
-		{	// create the directory
-			*ofs = 0;
-			Sys_Mkdir (path);
-			*ofs = '/';
-		}
-	}
-}
 
 #define USE_THREADS 1
 
-#ifdef WIN32
+#if defined(_WIN32) && defined(USE_PNG)
 extern void png_default_flush(png_structp png_ptr);
 extern void png_default_write_data(png_structp png_ptr, png_bytep data, png_size_t length);
 unsigned int __stdcall png_write_thread (byte *buffer)
 {
+	/*
 	char		picname[MAX_OSPATH]; 
 	char		checkname[MAX_OSPATH];
 	int			i;
@@ -149,7 +138,7 @@ unsigned int __stdcall png_write_thread (byte *buffer)
 	f = fopen (picname, "wb");
 	if (!f)
 	{
-		ri.Con_Printf (PRINT_ALL, "Couldn't open %s for writing.\n", picname);
+		VID_Printf (PRINT_ALL, "Couldn't open %s for writing.\n", picname);
 #ifdef USE_THREADS
 		ExitThread (1);
 #else
@@ -160,7 +149,7 @@ unsigned int __stdcall png_write_thread (byte *buffer)
     png_ptr = png_create_write_struct (PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 
 	if (!png_ptr) {
-		ri.Con_Printf (PRINT_ALL, "libpng error\n", picname);
+		VID_Printf (PRINT_ALL, "libpng error\n", picname);
 #ifdef USE_THREADS
 		ExitThread (1);
 #else
@@ -172,7 +161,7 @@ unsigned int __stdcall png_write_thread (byte *buffer)
     if (!info_ptr)
     {
        png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
-       ri.Con_Printf (PRINT_ALL, "libpng error\n", picname);
+       VID_Printf (PRINT_ALL, "libpng error\n", picname);
 #ifdef USE_THREADS
 		ExitThread (1);
 #else
@@ -208,14 +197,18 @@ unsigned int __stdcall png_write_thread (byte *buffer)
 	free (buffer);
 	free (row_pointers);
 
-	ri.Con_Printf (PRINT_ALL, "Finished, wrote %s\n", picname);
+	VID_Printf (PRINT_ALL, "Finished, wrote %s\n", picname);
 #ifdef USE_THREADS
 	ExitThread (0);
 #endif
-
+	*/
 	return 0;
 }
 #endif
+
+
+#ifdef USE_JPEG
+
 
 void GL_ScreenShot_JPG (byte *buffer)
 {
@@ -241,7 +234,7 @@ void GL_ScreenShot_JPG (byte *buffer)
 	f = fopen (picname, "wb");
 	if (!f)
 	{
-		ri.Con_Printf (PRINT_ALL, "Couldn't open %s for writing.\n", picname);
+		VID_Printf (PRINT_ALL, "Couldn't open %s for writing.\n", picname);
 		return;
 	}
 
@@ -251,8 +244,8 @@ void GL_ScreenShot_JPG (byte *buffer)
 	jpeg_stdio_dest(&cinfo, f);
 
 	// Setup JPEG Parameters
-	cinfo.image_width = vid.width;
-	cinfo.image_height = vid.height;
+	cinfo.image_width = viddef.width;
+	cinfo.image_height = viddef.height;
 	cinfo.in_color_space = JCS_RGB;
 	cinfo.input_components = 3;
 
@@ -282,10 +275,14 @@ void GL_ScreenShot_JPG (byte *buffer)
 	fclose(f);
 	free(buffer);
 
-	ri.Con_Printf (PRINT_ALL, "Wrote %s\n", picname);
+	VID_Printf (PRINT_ALL, "Wrote %s\n", picname);
 }
 
-/* 
+
+#endif  // USE_JPEG
+
+
+/*
 ================== 
 GL_ScreenShot_f
 ================== 
@@ -297,54 +294,49 @@ void GL_ScreenShot_f (void)
 	DWORD tID;
 #endif
 
-	buffer = malloc(vid.width*vid.height*3);
+	buffer = (byte *) malloc(viddef.width*viddef.height*3);
 
-	qglReadPixels (0, 0, vid.width, vid.height, GL_RGB, GL_UNSIGNED_BYTE, buffer ); 
-#ifdef WIN32
+	glReadPixels (0, 0, viddef.width, viddef.height, GL_RGB, GL_UNSIGNED_BYTE, buffer ); 
+#if defined(_WIN32) && defined(USE_PNG)
 	if (!strcmp (ri.Cmd_Argv(1), "jpg"))
 	{
-		GL_ScreenShot_JPG (buffer);
+		//GL_ScreenShot_JPG (buffer);
 	}
 	else
 	{
 #ifdef USE_THREADS
 		//_beginthreadex (NULL, 0, (unsigned int (__stdcall *)(void *))png_write_thread, (void *)buffer, 0, &tID);
 		CreateThread (NULL, 0, (LPTHREAD_START_ROUTINE)png_write_thread, (LPVOID)buffer, 0, &tID);
-		ri.Con_Printf (PRINT_ALL, "Taking PNG screenshot...\n");
-#else
+		VID_Printf (PRINT_ALL, "Taking PNG screenshot...\n");
+#else  // USE_THREADS
 		png_write_thread (buffer);
-#endif
+#endif  // USE_THREADS
 	}
-#else
+#else  // WIN32
+
+#ifdef USE_JPEG
+
 	GL_ScreenShot_JPG (buffer);
-#endif
+
+#else  // USE_JPEG
+
+	VID_Printf (PRINT_ALL, "No JPEG support, no screenshot...\n");
+
+#endif  // USE_JPEG
+
+#endif  // WIN32
 } 
 
-#ifdef _DEBUG
-void GL_CheckForError (void)
-{
-	int error;
-
-	error = qglGetError ();
-
-	if (error != GL_NO_ERROR)
-		ri.Sys_Error (ERR_FATAL, "qglGetError: %d", error);
-}
-#else
-void GL_CheckForError (void)
-{
-}
-#endif
 
 /*
 ** GL_Strings_f
 */
 void GL_Strings_f( void )
 {
-	ri.Con_Printf (PRINT_ALL, "GL_VENDOR: %s\n", gl_config.vendor_string );
-	ri.Con_Printf (PRINT_ALL, "GL_RENDERER: %s\n", gl_config.renderer_string );
-	ri.Con_Printf (PRINT_ALL, "GL_VERSION: %s\n", gl_config.version_string );
-	ri.Con_Printf (PRINT_ALL, "GL_EXTENSIONS: %s\n", gl_config.extensions_string );
+	VID_Printf (PRINT_ALL, "GL_VENDOR: %s\n", gl_config.vendor_string );
+	VID_Printf (PRINT_ALL, "GL_RENDERER: %s\n", gl_config.renderer_string );
+	VID_Printf (PRINT_ALL, "GL_VERSION: %s\n", gl_config.version_string );
+	VID_Printf (PRINT_ALL, "GL_EXTENSIONS: %s\n", gl_config.extensions_string );
 }
 
 #ifdef R1GL_RELEASE
@@ -363,8 +355,8 @@ void GL_Version_f (void)
 */
 void GL_SetDefaultState( void )
 {
-	qglClearColor (1.0f, 0.0f, 0.5f, 0.5f);
-	qglCullFace(GL_FRONT);
+	glClearColor (1.0f, 0.0f, 0.5f, 0.5f);
+	glCullFace(GL_FRONT);
 	qglEnable(GL_TEXTURE_2D);
 
 	qglEnable(GL_ALPHA_TEST);
@@ -374,38 +366,19 @@ void GL_SetDefaultState( void )
 	qglDisable (GL_CULL_FACE);
 	qglDisable (GL_BLEND);
 
-	qglColor4fv(colorWhite);
-
-	qglPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
-	qglShadeModel (GL_FLAT);
+	qglColor4f(colorWhite[0], colorWhite[1], colorWhite[2], colorWhite[3]);
 
 	GL_TextureMode( gl_texturemode->string );
-	GL_TextureAlphaMode( gl_texturealphamode->string );
-	GL_TextureSolidMode( gl_texturesolidmode->string );
 
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
 
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-	qglBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	GL_TexEnv( GL_REPLACE );
-
-	if ( qglPointParameterfEXT && FLOAT_NE_ZERO(gl_ext_pointparameters->value))
-	{
-		float attenuations[3];
-
-		attenuations[0] = gl_particle_att_a->value;
-		attenuations[1] = gl_particle_att_b->value;
-		attenuations[2] = gl_particle_att_c->value;
-
-		qglEnable( GL_POINT_SMOOTH );
-		qglPointParameterfEXT( GL_POINT_SIZE_MIN_EXT, gl_particle_min_size->value );
-		qglPointParameterfEXT( GL_POINT_SIZE_MAX_EXT, gl_particle_max_size->value );
-		qglPointParameterfvEXT( GL_DISTANCE_ATTENUATION_EXT, attenuations );
-	}
+	GL_TexEnv(GL_TEXTURE0, GL_REPLACE);
 
 	gl_swapinterval->modified = true;
 	GL_UpdateSwapInterval();
@@ -417,11 +390,8 @@ void GL_UpdateSwapInterval( void )
 	{
 		gl_swapinterval->modified = false;
 
-#ifdef STEREO_SUPPORT
-		if ( !gl_state.stereo_enabled ) 
-#endif
 		{
-#ifdef _WIN32
+#if 0 //def _WIN32
 			if ( qwglSwapIntervalEXT )
 			{
 				qwglSwapIntervalEXT( Q_ftol(gl_swapinterval->value) );

@@ -374,6 +374,7 @@ void fire_blaster (edict_t *self, vec3_t start, vec3_t dir, int damage, int spee
 	bolt->think = G_FreeEdict;
 	bolt->dmg = damage;
 	bolt->classname = "bolt";
+	bolt->s.renderfx = RF_NOSHADOW;
 	if (hyper)
 		bolt->spawnflags = 1;
 	gi.linkentity (bolt);
@@ -642,6 +643,7 @@ void fire_rocket (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed
 	rocket->dmg_radius = damage_radius;
 	rocket->s.sound = gi.soundindex ("weapons/rockfly.wav");
 	rocket->classname = "rocket";
+	rocket->s.renderfx = RF_NOSHADOW;
 
 	if (self->client)
 		check_dodge (self, rocket->s.origin, dir, speed);

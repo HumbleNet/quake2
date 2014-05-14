@@ -71,21 +71,6 @@ cvar_t	*flood_waitdelay;
 
 cvar_t	*sv_maplist;
 
-void SpawnEntities (const char *mapname, const char *entities, const char *spawnpoint);
-void ClientThink (edict_t *ent, usercmd_t *cmd);
-qboolean ClientConnect (edict_t *ent, char *userinfo);
-void ClientUserinfoChanged (edict_t *ent, char *userinfo);
-void ClientDisconnect (edict_t *ent);
-void ClientBegin (edict_t *ent);
-void ClientCommand (edict_t *ent);
-void RunEntity (edict_t *ent);
-void WriteGame (const char *filename, qboolean autosave);
-void ReadGame (const char *filename);
-void WriteLevel (const char *filename);
-void ReadLevel (const char *filename);
-void InitGame (void);
-void G_RunFrame (void);
-
 
 //===================================================================
 
@@ -107,7 +92,7 @@ Returns a pointer to the structure with all entry points
 and global variables
 =================
 */
-game_export_t __attribute__ ((visibility("default"), externally_visible)) *GetGameAPI (game_import_t *import)
+game_export_t EXTERNALLY_VISIBLE *GetGameAPI (game_import_t *import)
 {
 	gi = *import;
 
@@ -149,6 +134,7 @@ void Sys_Error (const char *error, ...)
 	va_end (argptr);
 
 	gi.error ("%s", text);
+	__builtin_unreachable();
 }
 
 void Com_Printf (const char *msg, int level, ...)
@@ -163,7 +149,16 @@ void Com_Printf (const char *msg, int level, ...)
 	gi.dprintf ("%s", text);
 }
 
-#endif
+
+void Sys_DebugBreak (void) {
+#ifdef __GNUC__
+	__builtin_trap();
+#else  // _GNUCC
+	abort();
+#endif  // _GNUCC
+}
+
+#endif  // GAME_HARD_LINKED
 
 //======================================================================
 

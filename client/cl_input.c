@@ -359,7 +359,7 @@ CL_CreateCmd
 
 // CL_InitCmd
 //jec - initialize the pending usercmd structure for use
-__inline void CL_InitCmd (void)
+static void CL_InitCmd (void)
 {
 	usercmd_t *cmd = &cl.cmds[ cls.netchan.outgoing_sequence & (CMD_BACKUP-1) ];
 

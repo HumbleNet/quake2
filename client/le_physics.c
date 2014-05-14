@@ -11,6 +11,9 @@ returns the blocked flags (1 = floor, 2 = step / wall)
 */
 #define	STOP_EPSILON	0.1
 
+#ifndef GAME_HARD_LINKED
+
+
 int ClipVelocity (vec3_t in, vec3_t normal, vec3_t out, float overbounce)
 {
 	float	backoff;
@@ -37,6 +40,17 @@ int ClipVelocity (vec3_t in, vec3_t normal, vec3_t out, float overbounce)
 	
 	return blocked;
 }
+
+
+#else  // GAME_HARD_LINKED
+
+
+// implementation in g_phys.c
+int ClipVelocity (vec3_t in, vec3_t normal, vec3_t out, float overbounce);
+
+
+#endif  // GAME_HARD_LINKED
+
 
 void CL_ClipMoveToEntities ( vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, trace_t *tr );
 void LE_Physics_Toss (localent_t *ent)

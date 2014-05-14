@@ -350,7 +350,7 @@ void SCR_DrawCenterString (void)
 		SCR_AddDirtyPoint (x, y);
 		for (j=0 ; j<l ; j++, x+=8)
 		{
-			re.DrawChar (x, y, start[j]);	
+			R_DrawChar (x, y, start[j]);	
 			if (!remaining--)
 				return;
 		}
@@ -462,7 +462,7 @@ void SCR_Sky_f (void)
 		axis[2] = 1;
 	}
 
-	re.SetSky (Cmd_Argv(1), rotate, axis);
+	R_SetSky (Cmd_Argv(1), rotate, axis);
 }
 
 //============================================================================
@@ -506,7 +506,7 @@ void SCR_DrawChatHud (void)
 	for (i = chathud_index, j = 0; j <  scr_chathud_lines->intvalue; i++, j++)
 	{
 		for (x = 0; chathud_messages[i % scr_chathud_lines->intvalue][x] ; x++)
-			re.DrawChar ( (x+scr_chathud_x->intvalue)<<3, v, chathud_messages[i % scr_chathud_lines->intvalue][x]);
+			R_DrawChar ( (x+scr_chathud_x->intvalue)<<3, v, chathud_messages[i % scr_chathud_lines->intvalue][x]);
 
 		v += 8;
 	}
@@ -514,13 +514,11 @@ void SCR_DrawChatHud (void)
 
 void SCR_AddChatMessage (const char *chat)
 {
-	unsigned	i, index;
+	unsigned	i;
 	size_t		j;
 	size_t		length;
 	char		*p;
 	char		tempchat[512];
-
-	index = chathud_index % scr_chathud_lines->intvalue;
 
 	Q_strncpy (tempchat, chat, sizeof(tempchat)-1);
 
@@ -912,13 +910,13 @@ void SCR_TimeRefresh_f (void)
 
 	if (Cmd_Argc() == 2)
 	{	// run without page flipping
-		re.BeginFrame( 0 );
+		R_BeginFrame();
 		for (i=0 ; i<128 ; i++)
 		{
 			cl.refdef.viewangles[1] = i/128.0f*360.0f;
-			re.RenderFrame (&cl.refdef);
+			R_RenderFrame (&cl.refdef);
 		}
-		re.EndFrame();
+		GLimp_EndFrame();
 	}
 	else
 	{
@@ -926,9 +924,9 @@ void SCR_TimeRefresh_f (void)
 		{
 			cl.refdef.viewangles[1] = i/128.0f*360.0f;
 
-			re.BeginFrame( 0 );
-			re.RenderFrame (&cl.refdef);
-			re.EndFrame();
+			R_BeginFrame();
+			R_RenderFrame (&cl.refdef);
+			GLimp_EndFrame();
 		}
 	}
 
@@ -1120,7 +1118,7 @@ void SizeHUDString (char *string, int *w, int *h)
 	*h = lines * 8;
 }
 
-void DrawHUDString (const char *string, int x, int y, int centerwidth, int xor)
+void DrawHUDString (const char *string, int x, int y, int centerwidth, int xorValue)
 {
 	int		margin;
 	char	line[1024];
@@ -1143,7 +1141,7 @@ void DrawHUDString (const char *string, int x, int y, int centerwidth, int xor)
 			x = margin;
 		for (i=0 ; i<width ; i++)
 		{
-			re.DrawChar (x, y, line[i]^xor);
+			R_DrawChar (x, y, line[i]^xorValue);
 			x += 8;
 		}
 		if (*string)
@@ -1212,7 +1210,7 @@ void SCR_TouchPics (void)
 
 	for (i=0 ; i<2 ; i++)
 		for (j=0 ; j<11 ; j++)
-			re.RegisterPic (sb_nums[i][j]);
+			Draw_FindPic (sb_nums[i][j]);
 
 	if (crosshair->intvalue)
 	{
@@ -1598,11 +1596,6 @@ text to the screen.
 */
 void SCR_UpdateScreen (void)
 {
-#ifdef CL_STEREO_SUPPORT
-	int i;
-	int numframes;
-	float separation[2] = { 0, 0 };
-#endif
 
 	// if the screen is disabled (loading plaque is up, or vid mode changing)
 	// do nothing at all
@@ -1623,33 +1616,8 @@ void SCR_UpdateScreen (void)
 	** range check cl_camera_separation so we don't inadvertently fry someone's
 	** brain
 	*/
-#ifdef CL_STEREO_SUPPORT
-	if ( cl_stereo_separation->value > 1.0f )
-		Cvar_SetValue( "cl_stereo_separation", 1.0 );
-	else if (FLOAT_LT_ZERO(cl_stereo_separation->value))
-		Cvar_SetValue( "cl_stereo_separation", 0.0 );
 
-	if ( cl_stereo->intvalue )
-	{
-		numframes = 2;
-		separation[0] = -cl_stereo_separation->value / 2;
-		separation[1] =  cl_stereo_separation->value / 2;
-	}		
-	else
-	{
-		separation[0] = 0;
-		separation[1] = 0;
-		numframes = 1;
-	}
-#endif
-
-#ifdef CL_STEREO_SUPPORT
-	for ( i = 0; i < numframes; i++ )
-	{
-		re.BeginFrame( separation[i] );
-#else
-		re.BeginFrame( 0 );
-#endif
+		R_BeginFrame();
 
 		//r1: only update console during load
 		if (!cl.refresh_prepped)
@@ -1657,7 +1625,7 @@ void SCR_UpdateScreen (void)
 			if (cls.key_dest != key_menu)
 				SCR_DrawConsole ();
 			M_Draw ();
-			re.EndFrame();
+			GLimp_EndFrame();
 			return;
 		}
 
@@ -1665,11 +1633,11 @@ void SCR_UpdateScreen (void)
 		{	//  loading plaque over black screen
 			int		w, h;
 
-			re.CinematicSetPalette(NULL);
+			R_SetPalette(NULL);
 			scr_draw_loading = 0;
 			re.DrawGetPicSize (&w, &h, "loading");
 			re.DrawPic ((viddef.width-w)/2, (viddef.height-h)/2, "loading");
-//			re.EndFrame();
+//			GLimp_EndFrame();
 //			return;
 		} 
 		// if a cinematic is supposed to be running, handle menus
@@ -1681,28 +1649,28 @@ void SCR_UpdateScreen (void)
 			{
 				if (cl.cinematicpalette_active)
 				{
-					re.CinematicSetPalette(NULL);
+					R_SetPalette(NULL);
 					cl.cinematicpalette_active = false;
 				}
 				M_Draw ();
-//				re.EndFrame();
+//				GLimp_EndFrame();
 //				return;
 			}
 			else if (cls.key_dest == key_console)
 			{
 				if (cl.cinematicpalette_active)
 				{
-					re.CinematicSetPalette(NULL);
+					R_SetPalette(NULL);
 					cl.cinematicpalette_active = false;
 				}
 				SCR_DrawConsole ();
-//				re.EndFrame();
+//				GLimp_EndFrame();
 //				return;
 			}
 			else
 			{
 				SCR_DrawCinematic();
-//				re.EndFrame();
+//				GLimp_EndFrame();
 //				return;
 			}
 		}
@@ -1714,7 +1682,7 @@ void SCR_UpdateScreen (void)
 			// make sure the game palette is active
 			if (cl.cinematicpalette_active)
 			{
-				re.CinematicSetPalette(NULL);
+				R_SetPalette(NULL);
 				cl.cinematicpalette_active = false;
 			}
 #endif
@@ -1724,11 +1692,7 @@ void SCR_UpdateScreen (void)
 			// clear any dirty part of the background
 			SCR_TileClear ();
 
-#ifdef CL_STEREO_SUPPORT
-			V_RenderView ( separation[i] );
-#else
 			V_RenderView ();
-#endif
 
 			if (scr_timegraph->intvalue)
 				SCR_DebugGraph (cls.frametime*300, (int)(cls.frametime*300));
@@ -1756,8 +1720,5 @@ void SCR_UpdateScreen (void)
 
 			SCR_DrawLoading ();
 		}
-#ifdef CL_STEREO_SUPPORT
-	}
-#endif
-	re.EndFrame();
+	GLimp_EndFrame();
 }

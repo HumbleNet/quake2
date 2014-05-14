@@ -28,7 +28,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 int deferred_model_index;
 
 extern cvar_t	*qport;
-extern cvar_t	*vid_ref;
 
 typedef struct incoming_s
 {
@@ -68,10 +67,6 @@ cvar_t	*adr6;
 cvar_t	*adr7;
 cvar_t	*adr8;
 
-#ifdef CL_STEREO_SUPPORT
-cvar_t	*cl_stereo_separation;
-cvar_t	*cl_stereo;
-#endif
 
 cvar_t	*rcon_client_password;
 cvar_t	*rcon_address;
@@ -423,7 +418,7 @@ void CL_Ignore_f (void)
 
 	last = list->next;
 
-	newentry = Z_TagMalloc (sizeof(*list), TAGMALLOC_CLIENT_IGNORE);
+	newentry = (ignore_t *) Z_TagMalloc (sizeof(*list), TAGMALLOC_CLIENT_IGNORE);
 	newentry->text = CopyString (Cmd_Args(), TAGMALLOC_CLIENT_IGNORE);
 	newentry->next = last;
 	list->next = newentry;
@@ -1194,7 +1189,7 @@ void CL_Disconnect (qboolean skipdisconnect)
 	}
 
 	VectorClear (cl.refdef.blend);
-	re.CinematicSetPalette(NULL);
+	R_SetPalette(NULL);
 
 	//r1: why?
 	//M_ForceMenuOff ();
@@ -1297,7 +1292,7 @@ void CL_Spam_f (void)
 	MSG_WriteString (cmdBuff);
 	MSG_EndWriting (&cls.netchan.message);
 
-	Com_Printf ("Wrote %d bytes stringcmd.\n", LOG_CLIENT, count * strlen(what));
+	Com_Printf ("Wrote %u bytes stringcmd.\n", LOG_CLIENT, (unsigned int) (count * strlen(what)));
 }
 #endif
 
@@ -2117,7 +2112,10 @@ void CL_ReadPackets (void)
 	if (cls.state >= ca_connected
 	 && cls.realtime - cls.netchan.last_received > cl_timeout->intvalue*1000)
 	{
-		if (++cl.timeoutcount > 5)	// timeoutcount saves debugger
+		// don't disconnect from localhost
+		// apparent timeouts with local server are caused by too-slow computer
+		// can happen easily on emscripten
+		if (++cl.timeoutcount > 5 && (Q_strncasecmp(cls.servername, "localhost", 9) != 0))	// timeoutcount saves debugger
 		{
 			Com_Printf ("\nServer connection timed out.\n", LOG_CLIENT);
 #ifdef _DEBUG
@@ -2284,7 +2282,7 @@ qboolean CL_LoadLoc (const char *filename)
 		return false;
 	}
 
-	locBuffer = Z_TagMalloc (len+2, TAGMALLOC_CLIENT_LOC);
+	locBuffer = (char *) Z_TagMalloc (len+2, TAGMALLOC_CLIENT_LOC);
 	//locBuffer = alloca (len+2);
 	FS_Read (locBuffer, len, handle);
 
@@ -2382,7 +2380,7 @@ qboolean CL_LoadLoc (const char *filename)
 			break;
 		}
 
-		loc->next = Z_TagMalloc (sizeof(cl_location_t), TAGMALLOC_CLIENT_LOC);
+		loc->next = (cl_location_t *) Z_TagMalloc (sizeof(cl_location_t), TAGMALLOC_CLIENT_LOC);
 		loc = loc->next;
 
 		loc->next = NULL;
@@ -2448,7 +2446,7 @@ void CL_AddLoc_f (void)
 
 	last = loc->next;
 
-	newentry = Z_TagMalloc (sizeof(*loc), TAGMALLOC_CLIENT_LOC);
+	newentry = (cl_location_t *) Z_TagMalloc (sizeof(*loc), TAGMALLOC_CLIENT_LOC);
 	newentry->name = CopyString (Cmd_Args(), TAGMALLOC_CLIENT_LOC);
 	FastVectorCopy (cl.refdef.vieworg, newentry->location);
 	newentry->next = last;
@@ -3066,9 +3064,10 @@ skipplayer:;
 
 		CM_LoadMap (cl.configstrings[CS_MODELS+1], true, &map_checksum);
 
-		if (map_checksum && map_checksum != strtoul(cl.configstrings[CS_MAPCHECKSUM], NULL, 10)) {
+		uint32 expected_checksum = strtoul(cl.configstrings[CS_MAPCHECKSUM], NULL, 10);
+		if (map_checksum && map_checksum != expected_checksum) {
 			Com_Error (ERR_DROP, "Local map version differs from server: 0x%.8x != 0x%.8x",
-				map_checksum, atoi(cl.configstrings[CS_MAPCHECKSUM]));
+				map_checksum, expected_checksum);
 			return;
 		}
 	}
@@ -3438,7 +3437,7 @@ void CL_IndexStats_f (void)
 	Com_Printf ("CS_GENERAL    : %d\n", LOG_GENERAL, count);
 }
 
-void _cl_http_max_connections_changed (cvar_t *c, char *old, char *new)
+void _cl_http_max_connections_changed (cvar_t *c, char *old, char *newValue)
 {
 	if (c->intvalue > 8)
 		Cvar_Set (c->name, "8");
@@ -3450,7 +3449,7 @@ void _cl_http_max_connections_changed (cvar_t *c, char *old, char *new)
 	//	Com_Printf ("WARNING: Changing the maximum connections higher than 2 violates the HTTP specification recommendations. Doing so may result in you being blocked from the remote system and offers no performance benefits unless you are on a very high latency link (ie, satellite)\n", LOG_GENERAL);
 }
 
-void _gun_changed (cvar_t *c, char *old, char *new)
+void _gun_changed (cvar_t *c, char *old, char *newValue)
 {
 	if (cls.state >= ca_connected && cls.serverProtocol == PROTOCOL_R1Q2)
 	{
@@ -3461,7 +3460,7 @@ void _gun_changed (cvar_t *c, char *old, char *new)
 	}
 }
 
-void _player_updates_changed (cvar_t *c, char *old, char *new)
+void _player_updates_changed (cvar_t *c, char *old, char *newValue)
 {
 	if (c->intvalue > 10)
 		Cvar_Set (c->name, "10");
@@ -3480,7 +3479,7 @@ void _player_updates_changed (cvar_t *c, char *old, char *new)
 		cl.player_update_time = 0;
 }
 
-void _updaterate_changed (cvar_t *c, char *old, char *new)
+void _updaterate_changed (cvar_t *c, char *old, char *newValue)
 {
 	if (c->intvalue < 0)
 		Cvar_Set (c->name, "0");
@@ -3522,10 +3521,6 @@ void CL_InitLocal (void)
 //
 // register our variables
 //
-#ifdef CL_STEREO_SUPPORT
-	cl_stereo_separation = Cvar_Get( "cl_stereo_separation", "0.4", CVAR_ARCHIVE );
-	cl_stereo = Cvar_Get( "cl_stereo", "0", 0 );
-#endif
 
 	cl_add_blend = Cvar_Get ("cl_blend", "1", 0);
 	cl_add_lights = Cvar_Get ("cl_lights", "1", 0);
@@ -3919,10 +3914,8 @@ void CL_RefreshInputs (void)
 	// process new key events
 	Sys_SendKeyEvents ();
 
-#if (defined JOYSTICK) || (defined LINUX)
 	// process mice & joystick events
 	IN_Commands ();
-#endif
 
 	// process console commands
 	Cbuf_Execute ();
@@ -3946,7 +3939,7 @@ void CL_LoadDeferredModels (void)
 
 		if (deferred_model_index == MAX_MODELS)
 		{
-			re.EndRegistration ();
+			R_EndRegistration ();
 			Com_DPrintf ("CL_LoadDeferredModels: All done.\n");
 			return;
 		}
@@ -3957,7 +3950,7 @@ void CL_LoadDeferredModels (void)
 		if (cl.configstrings[CS_MODELS+deferred_model_index][0] != '#')
 		{
 			//Com_DPrintf ("CL_LoadDeferredModels: Now loading '%s'...\n", cl.configstrings[CS_MODELS+deferred_model_index]);
-			cl.model_draw[deferred_model_index] = re.RegisterModel (cl.configstrings[CS_MODELS+deferred_model_index]);
+			cl.model_draw[deferred_model_index] = R_RegisterModel (cl.configstrings[CS_MODELS+deferred_model_index]);
 			if (cl.configstrings[CS_MODELS+deferred_model_index][0] == '*')
 				cl.model_clip[deferred_model_index] = CM_InlineModel (cl.configstrings[CS_MODELS+deferred_model_index]);
 			else
@@ -4049,12 +4042,6 @@ void CL_Synchronous_Frame (int msec)
 
 	// predict all unacknowledged movements
 	CL_PredictMovement ();
-
-	// allow rendering DLL change
-	if (vid_ref->modified)
-	{
-		VID_ReloadRefresh ();
-	}
 
 	if (!cl.refresh_prepped && cls.state == ca_active)
 		CL_PrepRefresh ();
@@ -4249,11 +4236,6 @@ void CL_Frame (int msec)
 		
 			//set the mouse on/off
 			IN_Frame();
-
-			if (vid_ref->modified)
-			{
-				VID_ReloadRefresh ();
-			}
 		}
 		
 		if (!cl.refresh_prepped && cls.state == ca_active)

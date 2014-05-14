@@ -104,7 +104,6 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 	float	alpha;
 	vec3_t	move, delta, vectors[3];
 	vec3_t	frontv, backv;
-	int		i;
 	int		index_xyz;
 	float	*lerp;
 
@@ -157,115 +156,6 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 
 	GL_LerpVerts( paliashdr->num_xyz, v, ov, verts, lerp, move, frontv, backv );
 
-	//TODO: use this somehow
-	/*qglEnableClientState (GL_VERTEX_ARRAY);
-	qglEnableClientState (GL_NORMAL_ARRAY);
-	qglEnableClientState (GL_TEXTURE_COORD_ARRAY);
-
-	qglVertexPointer (3, GL_FLOAT, 0, inVertexArray);
-	qglNormalPointer (GL_FLOAT, 12, inNormalsArray);
-	qglTexCoordPointer (2, GL_FLOAT, 0, inCoordArray);
-
-	qglDrawElements (GL_TRIANGLES, inNumIndexes, GL_UNSIGNED_INT, inIndexArray);*/
-
-	if (FLOAT_NE_ZERO(gl_vertex_arrays->value))
-	{
-		float colorArray[MAX_VERTS*4];
-
-		qglEnableClientState( GL_VERTEX_ARRAY );
-		GL_CheckForError ();
-
-		qglVertexPointer( 3, GL_FLOAT, 16, s_lerped );	// padded for SIMD
-		GL_CheckForError ();
-
-//		if ( currententity->flags & ( RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE ) )
-		// PMM - added double damage shell
-		if ( currententity->flags & ( RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | RF_SHELL_DOUBLE | RF_SHELL_HALF_DAM) )
-		{
-			qglColor4f( shadelight[0], shadelight[1], shadelight[2], alpha );
-			GL_CheckForError ();
-		}
-		else
-		{
-			qglEnableClientState( GL_COLOR_ARRAY );
-			GL_CheckForError ();
-
-			qglColorPointer( 4, GL_FLOAT, 0, colorArray );
-			GL_CheckForError ();
-
-			//
-			// pre light everything
-			//
-			for ( i = 0; i < paliashdr->num_xyz; i++ )
-			{
-				float l = shadedots[verts[i].lightnormalindex];
-
-				colorArray[i*4+0] = l * shadelight[0];
-				colorArray[i*4+1] = l * shadelight[1];
-				colorArray[i*4+2] = l * shadelight[2];
-				colorArray[i*4+3] = alpha;
-				//qglColor4f (l* shadelight[0], l*shadelight[1], l*shadelight[2], alpha);
-			}
-		}
-
-		if ( qglLockArraysEXT != 0 )
-		{
-			qglLockArraysEXT( 0, paliashdr->num_xyz );
-			GL_CheckForError ();
-		}
-
-		for (;;)
-		{
-			// get the vertex count and primitive type
-			count = *order++;
-			if (!count)
-				break;		// done
-			if (count < 0)
-			{
-				count = -count;
-				qglBegin (GL_TRIANGLE_FAN);
-			}
-			else
-			{
-				qglBegin (GL_TRIANGLE_STRIP);
-			}
-
-			// PMM - added double damage shell
-			if ( currententity->flags & ( RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | RF_SHELL_DOUBLE | RF_SHELL_HALF_DAM) )
-			{
-				do
-				{
-					index_xyz = order[2];
-					order += 3;
-
-					qglVertex3fv( s_lerped[index_xyz] );
-
-				} while (--count);
-			}
-			else
-			{
-				do
-				{
-					// texture coordinates come from the draw list
-					qglTexCoord2f (((float *)order)[0], ((float *)order)[1]);
-					index_xyz = order[2];
-					order += 3;
-					qglArrayElement( index_xyz );
-
-				} while (--count);
-			}
-			qglEnd ();
-			GL_CheckForError ();
-		}
-
-		if ( qglUnlockArraysEXT != 0 )
-		{
-			qglUnlockArraysEXT();
-			GL_CheckForError ();
-		}
-	}
-	else
-	{
 		for (;;)
 		{
 			// get the vertex count and primitive type
@@ -290,7 +180,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 					order += 3;
 
 					qglColor4f( shadelight[0], shadelight[1], shadelight[2], alpha);
-					qglVertex3fv (s_lerped[index_xyz]);
+					qglVertex3f(s_lerped[index_xyz][0], s_lerped[index_xyz][1], s_lerped[index_xyz][2]);
 
 				} while (--count);
 			}
@@ -299,7 +189,7 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 				do
 				{
 					// texture coordinates come from the draw list
-					qglTexCoord2f (((float *)order)[0], ((float *)order)[1]);
+					qglMTexCoord2f(GL_TEXTURE0, ((float *)order)[0], ((float *)order)[1]);
 					index_xyz = order[2];
 					order += 3;
 
@@ -307,21 +197,17 @@ void GL_DrawAliasFrameLerp (dmdl_t *paliashdr, float backlerp)
 					l = shadedots[verts[index_xyz].lightnormalindex];
 					
 					qglColor4f (l* shadelight[0], l*shadelight[1], l*shadelight[2], alpha);
-					qglVertex3fv (s_lerped[index_xyz]);
+					qglVertex3f(s_lerped[index_xyz][0], s_lerped[index_xyz][1], s_lerped[index_xyz][2]);
 				} while (--count);
 			}
 
 			qglEnd ();
-			GL_CheckForError ();
 		}
-	}
 
-//	if ( currententity->flags & ( RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE ) )
 	// PMM - added double damage shell
 	if ( currententity->flags & ( RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | RF_SHELL_DOUBLE | RF_SHELL_HALF_DAM) )
 	{
 		qglEnable( GL_TEXTURE_2D );
-		GL_CheckForError ();
 	}
 }
 
@@ -384,7 +270,7 @@ void GL_DrawAliasShadow (dmdl_t *paliashdr)
 			point[1] -= shadevector[1]*(point[2]+lheight);
 			point[2] = height;
 //			height -= 0.001;
-			qglVertex3fv (point);
+			qglVertex3f(point[0], point[1], point[2]);
 
 			order += 3;
 
@@ -550,14 +436,14 @@ void R_DrawAliasModel (entity_t *e)
 	//r1: always test, even for weapon models
 	if ( ( e->frame >= paliashdr->num_frames ) || ( e->frame < 0 ) )
 	{
-		ri.Con_Printf (PRINT_DEVELOPER, "R_DrawAliasModel %s: no such frame %d\n", 
+		Com_DPrintf("R_DrawAliasModel %s: no such frame %d\n", 
 			currentmodel->name, e->frame);
 		e->frame = 0;
 	}
 
 	if ( ( e->oldframe >= paliashdr->num_frames ) || ( e->oldframe < 0 ) )
 	{
-		ri.Con_Printf (PRINT_DEVELOPER, "R_DrawAliasModel %s: no such oldframe %d\n", 
+		Com_DPrintf("R_DrawAliasModel %s: no such oldframe %d\n", 
 			currentmodel->name, e->oldframe);
 		e->oldframe = 0;
 	}
@@ -781,7 +667,7 @@ void R_DrawAliasModel (entity_t *e)
 	    MYgluPerspective( r_newrefdef.fov_y, ( float ) r_newrefdef.width / r_newrefdef.height,  4,  gl_zfar->value);
 		qglMatrixMode( GL_MODELVIEW );
 
-		qglCullFace( GL_BACK );
+		glCullFace( GL_BACK );
 	}
 
     qglPushMatrix ();
@@ -809,14 +695,13 @@ void R_DrawAliasModel (entity_t *e)
 		skin = r_notexture;	// fallback...
 
 
-	GL_Bind(skin->texnum);
+	GL_MBind(GL_TEXTURE0, skin->texnum);
 
 	// draw it
 
-	qglShadeModel (GL_SMOOTH);
 
-	GL_TexEnv( GL_MODULATE );
-	if ( currententity->flags & RF_TRANSLUCENT || (skin->has_alpha && FLOAT_NE_ZERO(gl_alphaskins->value)))
+	GL_TexEnv(GL_TEXTURE0, GL_MODULATE);
+	if ( currententity->flags & RF_TRANSLUCENT || (skin->has_alpha && gl_alphaskins->intvalue))
 	{
 		qglEnable (GL_BLEND);
 	}
@@ -825,7 +710,7 @@ void R_DrawAliasModel (entity_t *e)
 	/*if ( (currententity->frame >= paliashdr->num_frames) 
 		|| (currententity->frame < 0) )
 	{
-		ri.Con_Printf (PRINT_ALL, "R_DrawAliasModel %s: no such frame %d\n",
+		VID_Printf (PRINT_ALL, "R_DrawAliasModel %s: no such frame %d\n",
 			currentmodel->name, currententity->frame);
 		currententity->frame = 0;
 		currententity->oldframe = 0;
@@ -834,19 +719,18 @@ void R_DrawAliasModel (entity_t *e)
 	if ( (currententity->oldframe >= paliashdr->num_frames)
 		|| (currententity->oldframe < 0))
 	{
-		ri.Con_Printf (PRINT_ALL, "R_DrawAliasModel %s: no such oldframe %d\n",
+		VID_Printf (PRINT_ALL, "R_DrawAliasModel %s: no such oldframe %d\n",
 			currentmodel->name, currententity->oldframe);
 		currententity->frame = 0;
 		currententity->oldframe = 0;
 	}*/
 
-	if ( FLOAT_EQ_ZERO(r_lerpmodels->value) )
+	if ( !r_lerpmodels->intvalue )
 		currententity->backlerp = 0;
 
 	GL_DrawAliasFrameLerp (paliashdr, currententity->backlerp);
 
-	GL_TexEnv( GL_REPLACE );
-	qglShadeModel (GL_FLAT);
+	GL_TexEnv(GL_TEXTURE0, GL_REPLACE);
 
 	qglPopMatrix ();
 
@@ -855,10 +739,10 @@ void R_DrawAliasModel (entity_t *e)
 		qglMatrixMode( GL_PROJECTION );
 		qglPopMatrix();
 		qglMatrixMode( GL_MODELVIEW );
-		qglCullFace( GL_FRONT );
+		glCullFace( GL_FRONT );
 	}
 
-	if ( currententity->flags & RF_TRANSLUCENT || (skin->has_alpha && FLOAT_NE_ZERO(gl_alphaskins->value)))
+	if ( currententity->flags & RF_TRANSLUCENT || (skin->has_alpha && gl_alphaskins->intvalue))
 	{
 		qglDisable (GL_BLEND);
 	}
@@ -867,7 +751,7 @@ void R_DrawAliasModel (entity_t *e)
 		qglDepthRange (gldepthmin, gldepthmax);
 
 #if 1
-	if (FLOAT_NE_ZERO(gl_shadows->value) && !(currententity->flags & (RF_TRANSLUCENT | RF_WEAPONMODEL)))
+	if (gl_shadows->intvalue && !(currententity->flags & (RF_TRANSLUCENT | RF_WEAPONMODEL | RF_NOSHADOW)))
 	{
 		qglPushMatrix ();
 		R_RotateForEntity (e);
@@ -880,7 +764,7 @@ void R_DrawAliasModel (entity_t *e)
 		qglPopMatrix ();
 	}
 #endif
-	qglColor4fv(colorWhite);
+	qglColor4f(colorWhite[0], colorWhite[1], colorWhite[2], colorWhite[3]);
 }
 
 

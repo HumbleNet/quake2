@@ -1145,7 +1145,7 @@ static qboolean AddVarBan (varban_t *list, char *cvar, char *blocktype, char *if
 
 	if (!match)
 	{
-		bans->next = Z_TagMalloc (sizeof(varban_t), TAGMALLOC_CVARBANS);
+		bans->next = (varban_t *) Z_TagMalloc (sizeof(varban_t), TAGMALLOC_CVARBANS);
 		bans = bans->next;
 		bans->next = NULL;
 		bans->varname = CopyString (cvar, TAGMALLOC_CVARBANS);
@@ -1153,7 +1153,7 @@ static qboolean AddVarBan (varban_t *list, char *cvar, char *blocktype, char *if
 		match = &bans->match;
 	}
 
-	match->next = Z_TagMalloc (sizeof(banmatch_t), TAGMALLOC_CVARBANS);
+	match->next = (banmatch_t *) Z_TagMalloc (sizeof(banmatch_t), TAGMALLOC_CVARBANS);
 	match = match->next;
 
 	match->next = NULL;
@@ -1345,7 +1345,7 @@ static void SV_AddCommandBan_f (void)
 	else
 		logmethod = CMDBAN_LOG_MESSAGE;
 
-	x->next = Z_TagMalloc (sizeof(*x), TAGMALLOC_CMDBANS);
+	x->next = (bannedcommands_t *) Z_TagMalloc (sizeof(*x), TAGMALLOC_CMDBANS);
 	x = x->next;
 
 	x->name = CopyString (Cmd_Argv(1), TAGMALLOC_CMDBANS);
@@ -1435,14 +1435,14 @@ static void SV_AddServerAlias_f (void)
 	}
 
 	//FIXME: make better tag
-	alias->next = Z_TagMalloc (sizeof(linkedvaluelist_t), TAGMALLOC_ALIAS);
+	alias->next = (linkedvaluelist_t *) Z_TagMalloc (sizeof(linkedvaluelist_t), TAGMALLOC_ALIAS);
 	alias = alias->next;
 	alias->next = NULL;
 	alias->name = CopyString (Cmd_Argv(1), TAGMALLOC_ALIAS);
 
 replace:
 
-	alias->value = Z_TagMalloc ((int)strlen(text)+2, TAGMALLOC_ALIAS);
+	alias->value = (char *) Z_TagMalloc ((int)strlen(text)+2, TAGMALLOC_ALIAS);
 	strcpy (alias->value, text);
 	strcat (alias->value, "\n");
 
@@ -1540,7 +1540,7 @@ static qboolean ValidateAndAddToNetBlockList (char *ip, netblock_t *list, int ta
 	while (n->next)
 		n = n->next;
 
-	n->next = Z_TagMalloc (sizeof(*n), tag);
+	n->next = (netblock_t *) Z_TagMalloc (sizeof(*n), tag);
 	n = n->next;
 
 	n->ip = *(uint32 *)from.ip;
@@ -1968,7 +1968,7 @@ static void SV_AddNullCmd_f (void)
 		ncmd = ncmd->next;
 
 	//FIXME: make better tag
-	ncmd->next = Z_TagMalloc (sizeof(linkednamelist_t), TAGMALLOC_CMDBANS);
+	ncmd->next = (linkednamelist_t *) Z_TagMalloc (sizeof(linkednamelist_t), TAGMALLOC_CMDBANS);
 
 	ncmd = ncmd->next;
 	ncmd->name = CopyString (Cmd_Argv(1), TAGMALLOC_CMDBANS);
@@ -2032,7 +2032,7 @@ static void SV_AddLrconCmd_f (void)
 		ncmd = ncmd->next;
 
 	//FIXME: make better tag
-	ncmd->next = Z_TagMalloc (sizeof(linkednamelist_t), TAGMALLOC_LRCON);
+	ncmd->next = (linkednamelist_t *) Z_TagMalloc (sizeof(linkednamelist_t), TAGMALLOC_LRCON);
 
 	ncmd = ncmd->next;
 	ncmd->name = CopyString (StripQuotes(Cmd_Args()), TAGMALLOC_LRCON);

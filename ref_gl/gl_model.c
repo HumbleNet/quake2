@@ -150,7 +150,7 @@ void Mod_Modellist_f (void)
 	total = num = 0;
 	numbrush = numalias = numsprites = numsub = 0;
 
-	ri.Con_Printf (PRINT_ALL,"Loaded models:\n");
+	VID_Printf (PRINT_ALL,"Loaded models:\n");
 	for (i=0, mod=mod_known ; i < mod_numknown ; i++, mod++)
 	{
 		if (!mod->name[0])
@@ -159,28 +159,28 @@ void Mod_Modellist_f (void)
 		switch (mod->type)
 		{
 			case mod_brush:
-				ri.Con_Printf (PRINT_ALL, "B ");
+				VID_Printf (PRINT_ALL, "B ");
 				numsub += mod->numsubmodels;
 				numbrush++;
 				break;
 			case mod_sprite:
-				ri.Con_Printf (PRINT_ALL, "S ");
+				VID_Printf (PRINT_ALL, "S ");
 				numsprites++;
 				break;
 			case mod_alias:
-				ri.Con_Printf (PRINT_ALL, "A ");
+				VID_Printf (PRINT_ALL, "A ");
 				numalias++;
 				break;
 			default:
-				ri.Con_Printf (PRINT_ALL, "! ");
+				VID_Printf (PRINT_ALL, "! ");
 				break;
 		}
-		ri.Con_Printf (PRINT_ALL, "%8i : %s\n", mod->extradatasize, mod->name);
+		VID_Printf (PRINT_ALL, "%8i : %s\n", mod->extradatasize, mod->name);
 		total += mod->extradatasize;
 	}
 
-	ri.Con_Printf (PRINT_ALL, "%d brush models (B) with %d submodels, %d alias models (A), %d sprites (S)\n", numbrush, numsub, numalias, numsprites);
-	ri.Con_Printf (PRINT_ALL, "Total resident: %i bytes (%.2f MB) in %d models (%d with submodels)\n", total, (float)total / 1024 / 1024, num, num + numsub);
+	VID_Printf (PRINT_ALL, "%d brush models (B) with %d submodels, %d alias models (A), %d sprites (S)\n", numbrush, numsub, numalias, numsprites);
+	VID_Printf (PRINT_ALL, "Total resident: %i bytes (%.2f MB) in %d models (%d with submodels)\n", total, (float)total / 1024 / 1024, num, num + numsub);
 }
 
 /*
@@ -285,7 +285,7 @@ model_t *Mod_ForName (char *name, qboolean crash)
 	//
 	// load the file
 	//
-	modfilelen = ri.FS_LoadFile (name, (void *)&buf);
+	modfilelen = ri.FS_LoadFile (name, (void **)&buf);
 	if (!buf)
 	{
 		if (crash)
@@ -342,7 +342,7 @@ model_t *Mod_ForName (char *name, qboolean crash)
 	{
 		loadmodel->extradatasize = Hunk_End ();
 
-		model_size = malloc (sizeof(*model_size));
+		model_size = (mscache_t	*) malloc (sizeof(*model_size));
 		if (!model_size)
 			ri.Sys_Error (ERR_FATAL, "Mod_ForName: out of memory");
 		strcpy (model_size->name, mod->name);
@@ -383,7 +383,7 @@ void Mod_LoadLighting (lump_t *l)
 		loadmodel->lightdata = NULL;
 		return;
 	}
-	loadmodel->lightdata = Hunk_Alloc ( l->filelen);	
+	loadmodel->lightdata = (byte *) Hunk_Alloc ( l->filelen);
 	memcpy (loadmodel->lightdata, mod_base + l->fileofs, l->filelen);
 }
 
@@ -405,7 +405,7 @@ void Mod_LoadVisibility (lump_t *l)
 		return;
 	}
 
-	loadmodel->vis = Hunk_Alloc ( l->filelen);	
+	loadmodel->vis = (dvis_t *) Hunk_Alloc ( l->filelen);
 	memcpy (loadmodel->vis, mod_base + l->fileofs, l->filelen);
 
 #if Q_BIGENDIAN
@@ -435,12 +435,12 @@ void Mod_LoadVertexes (lump_t *l)
 	int			i;
 #endif
 
-	in = (void *)(mod_base + l->fileofs);
+	in = (dvertex_t *) (mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
 		ri.Sys_Error (ERR_DROP, "Mod_LoadVertexes: funny lump size in %s",loadmodel->name);
 
 	count = l->filelen / sizeof(*in);
-	out = Hunk_Alloc ( count*sizeof(*out));	
+	out = (mvertex_t *) Hunk_Alloc ( count*sizeof(*out));
 
 	loadmodel->vertexes = out;
 	loadmodel->numvertexes = count;
@@ -485,11 +485,11 @@ void Mod_LoadSubmodels (lump_t *l)
 	mmodel_t	*out;
 	int			i, count;
 
-	in = (void *)(mod_base + l->fileofs);
+	in = (dmodel_t *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
 		ri.Sys_Error (ERR_DROP, "MOD_LoadBmodel: funny lump size in %s",loadmodel->name);
 	count = l->filelen / sizeof(*in);
-	out = Hunk_Alloc ( count*sizeof(*out));	
+	out = (mmodel_t *) Hunk_Alloc ( count*sizeof(*out));
 
 	loadmodel->submodels = out;
 	loadmodel->numsubmodels = count;
@@ -525,7 +525,7 @@ void Mod_LoadEdges (lump_t *l)
 	medge_t *out;
 	int 	i, count;
 
-	in = (void *)(mod_base + l->fileofs);
+	in = (dedge_t *)(mod_base + l->fileofs);
 
 	if (l->filelen % sizeof(*in))
 		ri.Sys_Error (ERR_DROP, "Mod_LoadEdges: funny lump size in %s",loadmodel->name);
@@ -533,7 +533,7 @@ void Mod_LoadEdges (lump_t *l)
 	count = l->filelen / sizeof(*in);
 
 	//r1: was count+1
-	out = Hunk_Alloc (count * sizeof(*out));	
+	out = (medge_t *) Hunk_Alloc (count * sizeof(*out));
 
 	loadmodel->edges = out;
 	loadmodel->numedges = count;
@@ -548,8 +548,6 @@ void Mod_LoadEdges (lump_t *l)
 //FIXME: this is bad, loads entire file for just 8 bytes!
 qboolean GetWalInfo (const char *name, int *width, int *height)
 {
-	if (rx.FS_FOpenFile)
-	{
 #ifdef _DEBUG
 		int		i;
 		char	grey = 8;
@@ -558,7 +556,7 @@ qboolean GetWalInfo (const char *name, int *width, int *height)
 		qboolean	closeFile;
 		FILE		*h;
 
-		rx.FS_FOpenFile (name, &h, HANDLE_OPEN, &closeFile);
+		FS_FOpenFile (name, &h, HANDLE_OPEN, &closeFile);
 		if (!h)
 			return false;
 
@@ -567,15 +565,15 @@ qboolean GetWalInfo (const char *name, int *width, int *height)
 			ri.FS_FCloseFile (h);
 			return false;
 		}*/
-		rx.FS_Read (&mt, sizeof(mt), h);
+		FS_Read (&mt, sizeof(mt), h);
 
 		if (closeFile)
-			rx.FS_FCloseFile (h);
+			FS_FCloseFile (h);
 		
 		*width = LittleLong (mt.width);
 		*height = LittleLong (mt.height);
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && !defined(EMSCRIPTEN)
 		FS_CreatePath (va("wals/%s", name));
 		h = fopen (va("wals/%s", name), "wb");
 		fwrite (&mt, 1, sizeof(mt), h);
@@ -591,22 +589,6 @@ qboolean GetWalInfo (const char *name, int *width, int *height)
 #endif
 
 		return true;
-	}
-	else
-	{
-		miptex_t	*mt;
-
-		ri.FS_LoadFile (name, (void **)&mt);
-
-		if (!mt)
-			return false;
-
-		*width = LittleLong (mt->width);
-		*height = LittleLong (mt->height);
-
-		ri.FS_FreeFile ((void *)mt);
-		return true;
-	}
 }
 
 /*
@@ -624,13 +606,13 @@ void Mod_LoadTexinfo (lump_t *l)
 	int		next;
 	size_t	length;
 
-	in = (void *)(mod_base + l->fileofs);
+	in = (texinfo_t *)(mod_base + l->fileofs);
 	
 	if (l->filelen % sizeof(*in))
 		ri.Sys_Error (ERR_DROP, "Mod_LoadTexinfo: funny lump size in %s",loadmodel->name);
 
 	count = l->filelen / sizeof(*in);
-	out = Hunk_Alloc ( count*sizeof(*out));	
+	out = (mtexinfo_t *) Hunk_Alloc ( count*sizeof(*out));
 
 	loadmodel->texinfo = out;
 	loadmodel->numtexinfo = count;
@@ -670,7 +652,7 @@ void Mod_LoadTexinfo (lump_t *l)
 		
 		if (!GetWalInfo (name, &global_hax_texture_x, &global_hax_texture_y))
 		{
-			ri.Con_Printf (PRINT_ALL, "Couldn't load %s\n", name);
+			VID_Printf (PRINT_ALL, "Couldn't load %s\n", name);
 			out->image = r_notexture;
 			continue;
 		}
@@ -714,7 +696,7 @@ void Mod_LoadTexinfo (lump_t *l)
 					
 					if (!out->image)
 					{
-						ri.Con_Printf (PRINT_ALL, "Couldn't load %s\n", name);
+						VID_Printf (PRINT_ALL, "Couldn't load %s\n", name);
 						out->image = r_notexture;
 					}
 				}
@@ -809,14 +791,14 @@ void Mod_LoadFaces (lump_t *l)
 	int			planenum, side;
 	int			ti;
 
-	in = (void *)(mod_base + l->fileofs);
+	in = (dface_t *)(mod_base + l->fileofs);
 
 	if (l->filelen % sizeof(*in))
 		ri.Sys_Error (ERR_DROP, "Mod_LoadFaces: funny lump size in %s",loadmodel->name);
 
 	count = l->filelen / sizeof(*in);
 
-	out = Hunk_Alloc ( count*sizeof(*out));	
+	out = (msurface_t *) Hunk_Alloc ( count*sizeof(*out));
 
 	loadmodel->surfaces = out;
 	loadmodel->numsurfaces = count;
@@ -930,13 +912,13 @@ void Mod_LoadNodes (lump_t *l)
 	dnode_t		*in;
 	mnode_t 	*out;
 
-	in = (void *)(mod_base + l->fileofs);
+	in = (dnode_t *)(mod_base + l->fileofs);
 
 	if (l->filelen % sizeof(*in))
 		ri.Sys_Error (ERR_DROP, "Mod_LoadNodes: funny lump size in %s",loadmodel->name);
 
 	count = l->filelen / sizeof(*in);
-	out = Hunk_Alloc ( count*sizeof(*out));	
+	out = (mnode_t *) Hunk_Alloc ( count*sizeof(*out));
 
 	loadmodel->nodes = out;
 	loadmodel->numnodes = count;
@@ -986,14 +968,14 @@ void Mod_LoadLeafs (lump_t *l)
 	int			i, count;
 //	glpoly_t	*poly;
 
-	in = (void *)(mod_base + l->fileofs);
+	in = (dleaf_t *)(mod_base + l->fileofs);
 
 	if (l->filelen % sizeof(*in))
 		ri.Sys_Error (ERR_DROP, "Mod_LoadLeafs: funny lump size in %s",loadmodel->name);
 	
 	count = l->filelen / sizeof(*in);
 
-	out = Hunk_Alloc ( count*sizeof(*out));	
+	out = (mleaf_t *) Hunk_Alloc ( count*sizeof(*out));	
 
 	//memset (out, 0, count*sizeof(*out));
 
@@ -1047,11 +1029,11 @@ void Mod_LoadMarksurfaces (lump_t *l)
 	short		*in;
 	msurface_t **out;
 	
-	in = (void *)(mod_base + l->fileofs);
+	in = (short *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
 		ri.Sys_Error (ERR_DROP, "MOD_LoadBmodel: funny lump size in %s",loadmodel->name);
 	count = l->filelen / sizeof(*in);
-	out = Hunk_Alloc ( count*sizeof(*out));	
+	out = (msurface_t **) Hunk_Alloc ( count*sizeof(*out));
 
 	loadmodel->marksurfaces = out;
 	loadmodel->nummarksurfaces = count;
@@ -1079,7 +1061,7 @@ void Mod_LoadSurfedges (lump_t *l)
 	int		i;
 #endif
 	
-	in = (void *)(mod_base + l->fileofs);
+	in = (int *)(mod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
 		ri.Sys_Error (ERR_DROP, "MOD_LoadBmodel: funny lump size in %s",loadmodel->name);
 	count = l->filelen / sizeof(*in);
@@ -1087,7 +1069,7 @@ void Mod_LoadSurfedges (lump_t *l)
 		ri.Sys_Error (ERR_DROP, "MOD_LoadBmodel: bad surfedges count in %s: %i",
 		loadmodel->name, count);
 
-	out = Hunk_Alloc ( count*sizeof(*out));	
+	out = (int *) Hunk_Alloc ( count*sizeof(*out));
 
 	loadmodel->surfedges = out;
 	loadmodel->numsurfedges = count;
@@ -1114,13 +1096,13 @@ void Mod_LoadPlanes (lump_t *l)
 	int			count;
 	int			bits;
 	
-	in = (void *)(mod_base + l->fileofs);
+	in = (dplane_t *)(mod_base + l->fileofs);
 
 	if (l->filelen % sizeof(*in))
 		ri.Sys_Error (ERR_DROP, "Mod_LoadPlanes: funny lump size in %s",loadmodel->name);
 
 	count = l->filelen / sizeof(*in);
-	out = Hunk_Alloc ( count*2*sizeof(*out));	
+	out = (cplane_t *) Hunk_Alloc ( count*2*sizeof(*out));
 	
 	loadmodel->planes = out;
 	loadmodel->numplanes = count;
@@ -1275,7 +1257,7 @@ void Mod_LoadAliasModel (model_t *mod, void *buffer)
 #endif
 
 	if (pheader->skinheight > MAX_LBM_HEIGHT)
-		ri.Con_Printf (PRINT_DEVELOPER, "model %s has a skin taller than traditional maximum of %d", mod->name,
+		Com_DPrintf("model %s has a skin taller than traditional maximum of %d", mod->name,
 				   MAX_LBM_HEIGHT);
 
 	if (pheader->num_xyz <= 0)
@@ -1335,7 +1317,7 @@ void Mod_LoadAliasModel (model_t *mod, void *buffer)
 	if (pheader->framesize * pheader->num_frames != pheader->num_frames * (int)((sizeof(daliasframe_t)-4) + pheader->num_xyz*sizeof(dtrivertx_t)))
 		ri.Sys_Error (ERR_DROP, "model %s has invalid frame size", mod->name);
 
-	pheader = Hunk_Alloc (required);
+	pheader = (dmdl_t *) Hunk_Alloc (required);
 	memcpy (pheader, &header, sizeof(dmdl_t));
 	//
 // load base s and t vertices (not used in gl version)
@@ -1456,7 +1438,7 @@ void Mod_LoadSpriteModel (model_t *mod, void *buffer)
 	int			i;
 
 	sprin = (dsprite_t *)buffer;
-	sprout = Hunk_Alloc (modfilelen);
+	sprout = (dsprite_t *) Hunk_Alloc (modfilelen);
 
 	sprout->ident = LittleLong (sprin->ident);
 	sprout->version = LittleLong (sprin->version);
@@ -1486,7 +1468,7 @@ void Mod_LoadSpriteModel (model_t *mod, void *buffer)
 
 		//r1: sprites crash if they don't have valid skins for framenum so be noisy
 		if (!mod->skins[i])
-			ri.Con_Printf (PRINT_ALL, "GL_FindImage: Couldn't find skin '%s' for sprite '%s'\n", sprout->frames[i].name, mod->name);
+			VID_Printf (PRINT_ALL, "GL_FindImage: Couldn't find skin '%s' for sprite '%s'\n", sprout->frames[i].name, mod->name);
 	}
 
 	mod->type = mod_sprite;
@@ -1501,7 +1483,7 @@ R_BeginRegistration
 Specifies the model that will be used as the world
 @@@@@@@@@@@@@@@@@@@@@
 */
-void EXPORT R_BeginRegistration (char *model)
+void R_BeginRegistration (char *model)
 {
 	char	fullname[MAX_QPATH];
 	cvar_t	*flushmap;
@@ -1520,7 +1502,7 @@ void EXPORT R_BeginRegistration (char *model)
 	// explicitly free the old map if different
 	// this guarantees that mod_known[0] is the world map
 	flushmap = ri.Cvar_Get ("flushmap", "0", 0);
-	if ( strcmp(mod_known[0].name, fullname) || FLOAT_NE_ZERO(flushmap->value))
+	if ( strcmp(mod_known[0].name, fullname) || flushmap->intvalue)
 		Mod_Free (&mod_known[0]);
 	r_worldmodel = Mod_ForName(fullname, true);
 
@@ -1534,7 +1516,7 @@ R_RegisterModel
 
 @@@@@@@@@@@@@@@@@@@@@
 */
-struct model_s * EXPORT R_RegisterModel (char *name)
+struct model_s * R_RegisterModel (char *name)
 {
 	model_t	*mod;
 	int		i;
@@ -1593,7 +1575,7 @@ R_EndRegistration
 
 @@@@@@@@@@@@@@@@@@@@@
 */
-void EXPORT R_EndRegistration (void)
+void R_EndRegistration (void)
 {
 	int		i;
 	model_t	*mod;

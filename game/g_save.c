@@ -24,39 +24,39 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 mmove_t mmove_reloc;
 
-field_t fields[] = {
-	{"classname", FOFS(classname), F_LSTRING},
-	{"model", FOFS(model), F_LSTRING},
-	{"spawnflags", FOFS(spawnflags), F_INT},
-	{"speed", FOFS(speed), F_FLOAT},
-	{"accel", FOFS(accel), F_FLOAT},
-	{"decel", FOFS(decel), F_FLOAT},
-	{"target", FOFS(target), F_LSTRING},
-	{"targetname", FOFS(targetname), F_LSTRING},
-	{"pathtarget", FOFS(pathtarget), F_LSTRING},
-	{"deathtarget", FOFS(deathtarget), F_LSTRING},
-	{"killtarget", FOFS(killtarget), F_LSTRING},
-	{"combattarget", FOFS(combattarget), F_LSTRING},
-	{"message", FOFS(message), F_LSTRING},
-	{"team", FOFS(team), F_LSTRING},
-	{"wait", FOFS(wait), F_FLOAT},
-	{"delay", FOFS(delay), F_FLOAT},
-	{"random", FOFS(random), F_FLOAT},
-	{"move_origin", FOFS(move_origin), F_VECTOR},
-	{"move_angles", FOFS(move_angles), F_VECTOR},
-	{"style", FOFS(style), F_INT},
-	{"count", FOFS(count), F_INT},
-	{"health", FOFS(health), F_INT},
-	{"sounds", FOFS(sounds), F_INT},
-	{"light", 0, F_IGNORE},
-	{"dmg", FOFS(dmg), F_INT},
-	{"mass", FOFS(mass), F_INT},
-	{"volume", FOFS(volume), F_FLOAT},
-	{"attenuation", FOFS(attenuation), F_FLOAT},
-	{"map", FOFS(map), F_LSTRING},
-	{"origin", FOFS(s.origin), F_VECTOR},
-	{"angles", FOFS(s.angles), F_VECTOR},
-	{"angle", FOFS(s.angles), F_ANGLEHACK},
+const field_t fields[] = {
+	{"classname", FOFS(classname), F_LSTRING, 0 },
+	{"model", FOFS(model), F_LSTRING, 0 },
+	{"spawnflags", FOFS(spawnflags), F_INT, 0 },
+	{"speed", FOFS(speed), F_FLOAT, 0 },
+	{"accel", FOFS(accel), F_FLOAT, 0 },
+	{"decel", FOFS(decel), F_FLOAT, 0 },
+	{"target", FOFS(target), F_LSTRING, 0 },
+	{"targetname", FOFS(targetname), F_LSTRING, 0 },
+	{"pathtarget", FOFS(pathtarget), F_LSTRING, 0 },
+	{"deathtarget", FOFS(deathtarget), F_LSTRING, 0 },
+	{"killtarget", FOFS(killtarget), F_LSTRING, 0 },
+	{"combattarget", FOFS(combattarget), F_LSTRING, 0 },
+	{"message", FOFS(message), F_LSTRING, 0 },
+	{"team", FOFS(team), F_LSTRING, 0 },
+	{"wait", FOFS(wait), F_FLOAT, 0 },
+	{"delay", FOFS(delay), F_FLOAT, 0 },
+	{"random", FOFS(random), F_FLOAT, 0 },
+	{"move_origin", FOFS(move_origin), F_VECTOR, 0 },
+	{"move_angles", FOFS(move_angles), F_VECTOR, 0 },
+	{"style", FOFS(style), F_INT, 0 },
+	{"count", FOFS(count), F_INT, 0 },
+	{"health", FOFS(health), F_INT, 0 },
+	{"sounds", FOFS(sounds), F_INT, 0 },
+	{"light", 0, F_IGNORE, 0 },
+	{"dmg", FOFS(dmg), F_INT, 0 },
+	{"mass", FOFS(mass), F_INT, 0 },
+	{"volume", FOFS(volume), F_FLOAT, 0 },
+	{"attenuation", FOFS(attenuation), F_FLOAT, 0 },
+	{"map", FOFS(map), F_LSTRING, 0 },
+	{"origin", FOFS(s.origin), F_VECTOR, 0 },
+	{"angles", FOFS(s.angles), F_VECTOR, 0 },
+	{"angle", FOFS(s.angles), F_ANGLEHACK, 0 },
 
 	{"goalentity", FOFS(goalentity), F_EDICT, FFL_NOSPAWN},
 	{"movetarget", FOFS(movetarget), F_EDICT, FFL_NOSPAWN},
@@ -103,7 +103,7 @@ field_t fields[] = {
 	{"item", STOFS(item), F_LSTRING, FFL_SPAWNTEMP},
 
 //need for item field in edict struct, FFL_SPAWNTEMP item will be skipped on saves
-	{"item", FOFS(item), F_ITEM},
+	{"item", FOFS(item), F_ITEM, 0 },
 
 	{"gravity", STOFS(gravity), F_LSTRING, FFL_SPAWNTEMP},
 	{"sky", STOFS(sky), F_LSTRING, FFL_SPAWNTEMP},
@@ -115,29 +115,29 @@ field_t fields[] = {
 	{"maxpitch", STOFS(maxpitch), F_FLOAT, FFL_SPAWNTEMP},
 	{"nextmap", STOFS(nextmap), F_LSTRING, FFL_SPAWNTEMP},
 
-	{0, 0, 0, 0}
+	{0, 0, F_INT, 0}
 
 };
 
 field_t		levelfields[] =
 {
-	{"changemap", LLOFS(changemap), F_LSTRING},
+	{"changemap", LLOFS(changemap), F_LSTRING, 0 },
                    
-	{"sight_client", LLOFS(sight_client), F_EDICT},
-	{"sight_entity", LLOFS(sight_entity), F_EDICT},
-	{"sound_entity", LLOFS(sound_entity), F_EDICT},
-	{"sound2_entity", LLOFS(sound2_entity), F_EDICT},
+	{"sight_client", LLOFS(sight_client), F_EDICT, 0 },
+	{"sight_entity", LLOFS(sight_entity), F_EDICT, 0 },
+	{"sound_entity", LLOFS(sound_entity), F_EDICT, 0 },
+	{"sound2_entity", LLOFS(sound2_entity), F_EDICT, 0 },
 
-	{NULL, 0, F_INT}
+	{NULL, 0, F_INT, 0 }
 };
 
 field_t		clientfields[] =
 {
-	{"pers.weapon", CLOFS(pers.weapon), F_ITEM},
-	{"pers.lastweapon", CLOFS(pers.lastweapon), F_ITEM},
-	{"newweapon", CLOFS(newweapon), F_ITEM},
+	{"pers.weapon", CLOFS(pers.weapon), F_ITEM, 0 },
+	{"pers.lastweapon", CLOFS(pers.lastweapon), F_ITEM, 0 },
+	{"newweapon", CLOFS(newweapon), F_ITEM, 0 },
 
-	{NULL, 0, F_INT}
+	{NULL, 0, F_INT, 0 }
 };
 
 /*
@@ -209,28 +209,27 @@ void InitGame (void)
 
 	// initialize all entities for this game
 	game.maxentities = maxentities->value;
-	g_edicts =  gi.TagMalloc (game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
+	g_edicts = (edict_t *) gi.TagMalloc (game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
 	globals.edicts = g_edicts;
 	globals.max_edicts = game.maxentities;
 
 	// initialize all clients for this game
 	game.maxclients = maxclients->value;
-	game.clients = gi.TagMalloc (game.maxclients * sizeof(game.clients[0]), TAG_GAME);
+	game.clients = (gclient_t *) gi.TagMalloc (game.maxclients * sizeof(game.clients[0]), TAG_GAME);
 	globals.num_edicts = game.maxclients+1;
 }
 
 //=========================================================
 
-void WriteField1 (FILE *f, field_t *field, byte *base)
+static void WriteField1(FILE *f, const field_t *field, byte *base)
 {
-	void		*p;
-	int			len;
-	int			index;
-
 	if (field->flags & FFL_SPAWNTEMP)
 		return;
 
-	p = (void *)(base + field->ofs);
+	void *p = (void *)(base + field->ofs);
+	int len;
+	int index;
+
 	switch (field->type)
 	{
 	case F_INT:
@@ -294,21 +293,18 @@ void WriteField1 (FILE *f, field_t *field, byte *base)
 }
 
 
-void WriteField2 (FILE *f, field_t *field, byte *base)
+static void WriteField2(FILE *f, const field_t *field, byte *base)
 {
-	int			len;
-	void		*p;
-
 	if (field->flags & FFL_SPAWNTEMP)
 		return;
 
-	p = (void *)(base + field->ofs);
+	void *p = (void *)(base + field->ofs);
 	switch (field->type)
 	{
 	case F_LSTRING:
 		if ( *(char **)p )
 		{
-			len = strlen(*(char **)p) + 1;
+			size_t len = strlen(*(char **)p) + 1;
 			fwrite (*(char **)p, len, 1, f);
 		}
 		break;
@@ -317,16 +313,16 @@ void WriteField2 (FILE *f, field_t *field, byte *base)
 	}
 }
 
-void ReadField (FILE *f, field_t *field, byte *base)
-{
-	void		*p;
-	int			len;
-	int			index;
 
+static void ReadField (FILE *f, const field_t *field, byte *base)
+{
 	if (field->flags & FFL_SPAWNTEMP)
 		return;
 
-	p = (void *)(base + field->ofs);
+	void *p = (void *)(base + field->ofs);
+	int len;
+	int index;
+
 	switch (field->type)
 	{
 	case F_INT:
@@ -342,7 +338,7 @@ void ReadField (FILE *f, field_t *field, byte *base)
 			*(char **)p = NULL;
 		else
 		{
-			*(char **)p = gi.TagMalloc (len, TAG_LEVEL);
+			*(char **)p = (char *) gi.TagMalloc (len, TAG_LEVEL);
 			fread (*(char **)p, len, 1, f);
 		}
 		break;
@@ -503,11 +499,11 @@ void ReadGame (const char *filename)
 		gi.error ("Savegame from an older version.\n");
 	}
 
-	g_edicts =  gi.TagMalloc (game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
+	g_edicts = (edict_t *) gi.TagMalloc (game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
 	globals.edicts = g_edicts;
 
 	fread (&game, sizeof(game), 1, f);
-	game.clients = gi.TagMalloc (game.maxclients * sizeof(game.clients[0]), TAG_GAME);
+	game.clients = (gclient_t *) gi.TagMalloc (game.maxclients * sizeof(game.clients[0]), TAG_GAME);
 	for (i=0 ; i<game.maxclients ; i++)
 		ReadClient (f, &game.clients[i]);
 
@@ -524,16 +520,13 @@ WriteEdict
 All pointer variables (except function pointers) must be handled specially.
 ==============
 */
-void WriteEdict (FILE *f, edict_t *ent)
+static void WriteEdict (FILE *f, edict_t *ent)
 {
-	field_t		*field;
-	edict_t		temp;
-
 	// all of the ints, floats, and vectors stay as they are
-	temp = *ent;
+	edict_t temp = *ent;
 
 	// change the pointers to lengths or indexes
-	for (field=fields ; field->name ; field++)
+	for (const field_t *field = fields ; field->name ; field++)
 	{
 		WriteField1 (f, field, (byte *)&temp);
 	}
@@ -542,7 +535,7 @@ void WriteEdict (FILE *f, edict_t *ent)
 	fwrite (&temp, sizeof(temp), 1, f);
 
 	// now write any allocated data following the edict
-	for (field=fields ; field->name ; field++)
+	for (const field_t *field = fields ; field->name ; field++)
 	{
 		WriteField2 (f, field, (byte *)ent);
 	}
@@ -590,11 +583,9 @@ All pointer variables (except function pointers) must be handled specially.
 */
 void ReadEdict (FILE *f, edict_t *ent)
 {
-	field_t		*field;
-
 	fread (ent, sizeof(*ent), 1, f);
 
-	for (field=fields ; field->name ; field++)
+	for (const field_t *field = fields ; field->name ; field++)
 	{
 		ReadField (f, field, (byte *)ent);
 	}

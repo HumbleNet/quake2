@@ -134,7 +134,7 @@ void CMod_LoadSubmodels (lump_t *l)
 	cmodel_t	*out;
 	int			i, j, count;
 
-	in = (void *)(cmod_base + l->fileofs);
+	in = (dmodel_t *)(cmod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
 		Com_Error (ERR_DROP, "CMod_LoadSubmodels: funny lump size");
 
@@ -174,7 +174,7 @@ void CMod_LoadSurfaces (lump_t *l)
 	mapsurface_t	*out;
 	int			i, count;
 
-	in = (void *)(cmod_base + l->fileofs);
+	in = (texinfo_t *)(cmod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
 		Com_Error (ERR_DROP, "CMod_LoadSurfaces: funny lump size");
 	count = l->filelen / sizeof(*in);
@@ -210,7 +210,7 @@ void CMod_LoadNodes (lump_t *l)
 	cnode_t		*out;
 	int			i, j, count;
 	
-	in = (void *)(cmod_base + l->fileofs);
+	in = (dnode_t *)(cmod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
 		Com_Error (ERR_DROP, "CMod_LoadNodes: funny lump size");
 	count = l->filelen / sizeof(*in);
@@ -249,7 +249,7 @@ void CMod_LoadBrushes (lump_t *l)
 	cbrush_t	*out;
 	int			i, count;
 	
-	in = (void *)(cmod_base + l->fileofs);
+	in = (dbrush_t *)(cmod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
 		Com_Error (ERR_DROP, "CMod_LoadBrushes: funny lump size");
 	count = l->filelen / sizeof(*in);
@@ -282,7 +282,7 @@ void CMod_LoadLeafs (lump_t *l)
 	dleaf_t 	*in;
 	int			count;
 	
-	in = (void *)(cmod_base + l->fileofs);
+	in = (dleaf_t *)(cmod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
 		Com_Error (ERR_DROP, "CMod_LoadLeafs: funny lump size");
 	count = l->filelen / sizeof(*in);
@@ -340,7 +340,7 @@ void CMod_LoadPlanes (lump_t *l)
 	int			count;
 	int			bits;
 	
-	in = (void *)(cmod_base + l->fileofs);
+	in = (dplane_t *)(cmod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
 		Com_Error (ERR_DROP, "CMod_LoadPlanes: funny lump size");
 	count = l->filelen / sizeof(*in);
@@ -392,7 +392,7 @@ void CMod_LoadLeafBrushes (lump_t *l)
 	uint16		*in;
 	int			count;
 	
-	in = (void *)(cmod_base + l->fileofs);
+	in = (uint16 *)(cmod_base + l->fileofs);
 
 	if (l->filelen % sizeof(*in))
 		Com_Error (ERR_DROP, "CMod_LoadLeafBrushes: funny lump size");
@@ -426,7 +426,7 @@ void CMod_LoadBrushSides (lump_t *l)
 	int			count;
 	int			num;
 
-	in = (void *)(cmod_base + l->fileofs);
+	in = (dbrushside_t *) (cmod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
 		Com_Error (ERR_DROP, "CMod_LoadBrushSides: funny lump size");
 	count = l->filelen / sizeof(*in);
@@ -463,7 +463,7 @@ void CMod_LoadAreas (lump_t *l)
 	darea_t 	*in;
 	int			count;
 
-	in = (void *)(cmod_base + l->fileofs);
+	in = (darea_t *)(cmod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
 		Com_Error (ERR_DROP, "CMod_LoadAreas: funny lump size");
 	count = l->filelen / sizeof(*in);
@@ -497,7 +497,7 @@ void CMod_LoadAreaPortals (lump_t *l)
 	dareaportal_t 	*in;
 	int			count;
 
-	in = (void *)(cmod_base + l->fileofs);
+	in = (dareaportal_t *)(cmod_base + l->fileofs);
 	if (l->filelen % sizeof(*in))
 		Com_Error (ERR_DROP, "CMod_LoadAreaPortals: funny lump size");
 
@@ -742,8 +742,16 @@ cmodel_t *CM_LoadMap (const char *name, qboolean clientload, uint32 *checksum)
 		}
 	}
 
+#ifdef USE_AFL
+	// don't compute checksum when fuzzing, it slows us down
+	last_checksum = 0;
+
+#else  // USE_AFL
+
 	if (!(override_bits & 2))
 		last_checksum = LittleLong (Com_BlockChecksum (buf, length));
+
+#endif  // USE_AFL
 
 	*checksum = last_checksum;
 

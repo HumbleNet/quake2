@@ -5,14 +5,10 @@
 #define SO_FILE "/etc/quake2.conf"
 
 #include <assert.h>
-#include <dlfcn.h> // ELF dl loader
-#include <sys/stat.h>
-#include <unistd.h>
-#include <errno.h>
 
 #include "../client/client.h"
+#include "../client/ref.h"
 
-#include "../linux/rw_linux.h"
 
 qboolean reload_video = false;
 
@@ -21,36 +17,20 @@ refexport_t	re;
 
 // Console variables that we need to access from this module
 cvar_t		*vid_gamma;
-cvar_t		*vid_ref;			// Name of Refresh DLL loaded
 cvar_t		*vid_xpos;			// X coordinate of window position
 cvar_t		*vid_ypos;			// Y coordinate of window position
 cvar_t		*vid_fullscreen;
 
 // Global variables used internally by this module
 viddef_t	viddef;				// global video state; used by other modules
-void		*reflib_library;		// Handle to refresh DLL 
 qboolean	reflib_active = 0;
 
 #define VID_NUM_MODES ( sizeof( vid_modes ) / sizeof( vid_modes[0] ) )
 
-/** KEYBOARD **************************************************************/
-
-void Do_Key_Event(int key, qboolean down);
-
-void (*KBD_Update_fp)(void);
-void (*KBD_Init_fp)(Key_Event_fp_t fp);
-void (*KBD_Close_fp)(void);
 
 /** MOUSE *****************************************************************/
 
 in_state_t in_state;
-
-void (*RW_IN_Init_fp)(in_state_t *in_state_p);
-void (*RW_IN_Shutdown_fp)(void);
-void (*RW_IN_Activate_fp)(qboolean active);
-void (*RW_IN_Commands_fp)(void);
-void (*RW_IN_Move_fp)(usercmd_t *cmd);
-void (*RW_IN_Frame_fp)(void);
 
 void Real_IN_Init (void);
 
@@ -80,6 +60,8 @@ void VID_Printf (int print_level, const char *fmt, ...)
 		Com_DPrintf ("%s", msg);
 }
 
+
+void VID_Error (int err_level, const char *fmt, ...) __attribute__((format (printf, 2, 3), noreturn));
 void VID_Error (int err_level, const char *fmt, ...)
 {
 	va_list		argptr;
@@ -100,51 +82,14 @@ void VID_Error (int err_level, const char *fmt, ...)
 ============
 VID_Restart_f
 
-Console command to re-start the video mode and refresh DLL. We do this
-simply by setting the modified flag for the vid_ref variable, which will
-cause the entire video mode and refresh DLL to be reset on the next frame.
+TODO: remove
 ============
 */
 void VID_Restart_f (void)
 {
-	vid_ref->modified = true;
 	reload_video = true;
 }
 
-/*
-** VID_GetModeInfo
-*/
-typedef struct vidmode_s
-{
-	const char *description;
-	int         width, height;
-	int         mode;
-} vidmode_t;
-
-vidmode_t vid_modes[] =
-{
-	{ "Mode 0: 320x240",   320, 240,   0 },
-	{ "Mode 1: 400x300",   400, 300,   1 },
-	{ "Mode 2: 512x384",   512, 384,   2 },
-	{ "Mode 3: 640x480",   640, 480,   3 },
-	{ "Mode 4: 800x600",   800, 600,   4 },
-	{ "Mode 5: 960x720",   960, 720,   5 },
-	{ "Mode 6: 1024x768",  1024, 768,  6 },
-	{ "Mode 7: 1152x864",  1152, 864,  7 },
-	{ "Mode 8: 1280x1024",  1280, 1024, 8 },
-	{ "Mode 9: 1600x1200", 1600, 1200, 9 }
-};
-
-qboolean VID_GetModeInfo(unsigned int *width, unsigned int *height, int mode)
-{
-	if ( mode < 0 || mode >= VID_NUM_MODES )
-		return false;
-
-	*width  = vid_modes[mode].width;
-	*height = vid_modes[mode].height;
-
-	return true;
-}
 
 /*
 ** VID_NewWindow
@@ -157,26 +102,10 @@ void VID_NewWindow ( int width, int height)
 
 void VID_FreeReflib (void)
 {
-	if (reflib_library) {
-		if (KBD_Close_fp)
-			KBD_Close_fp();
-		if (RW_IN_Shutdown_fp)
-			RW_IN_Shutdown_fp();
-		dlclose(reflib_library);
-	}
-
-	KBD_Init_fp = NULL;
-	KBD_Update_fp = NULL;
-	KBD_Close_fp = NULL;
-	RW_IN_Init_fp = NULL;
-	RW_IN_Shutdown_fp = NULL;
-	RW_IN_Activate_fp = NULL;
-	RW_IN_Commands_fp = NULL;
-	RW_IN_Move_fp = NULL;
-	RW_IN_Frame_fp = NULL;
+	KBD_Close();
+	RW_IN_Shutdown();
 
 	memset (&re, 0, sizeof(re));
-	reflib_library = NULL;
 	reflib_active  = false;
 }
 
@@ -188,69 +117,13 @@ VID_LoadRefresh
 qboolean VID_LoadRefresh( char *name )
 {
 	refimport_t		ri;
-	refimportnew_t  rx;
 
-	GetRefAPI_t		GetRefAPI;
-	GetExtraAPI_t	GetExtraAPI;
-
-	char	fn[MAX_OSPATH];
-	
 	if ( reflib_active )
 	{
-		if (KBD_Close_fp)
-			KBD_Close_fp();
-		if (RW_IN_Shutdown_fp)
-			RW_IN_Shutdown_fp();
-		KBD_Close_fp = NULL;
-		RW_IN_Shutdown_fp = NULL;
-		re.Shutdown();
+		KBD_Close();
+		RW_IN_Shutdown();
+		R_Shutdown();
 		VID_FreeReflib ();
-	}
-
-	Com_Printf( "------- Loading %s -------\n", LOG_CLIENT, name);
-
-
-	/*if ((fp = fopen(SO_FILE, "r")) == NULL) {
-		Com_Printf( "LoadLibrary(\"%s\") failed: can't open " SO_FILE " (required for location of ref libraries)\n", name);
-		return false;
-	}
-	fgets(fn, sizeof(fn), fp);
-	fclose(fp);
-	if (*fn && fn[strlen(fn) - 1] == '\n')
-		fn[strlen(fn) - 1] = 0;
-	*/
-
-	strcpy (fn, ".");
-	strcat(fn, "/");
-	strcat(fn, name);
-
-	// permission checking
-/*	if (strstr(fn, "softx") == NULL) { // softx doesn't require root
-		if (stat(fn, &st) == -1) {
-			Com_Printf( "LoadLibrary(\"%s\") failed: %s\n", name, strerror(errno));
-			return false;
-		}
-		if (st.st_uid != 0) {
-			Com_Printf( "LoadLibrary(\"%s\") failed: ref is not owned by root\n", name);
-			return false;
-		}
-#if 0
-		if ((st.st_mode & 0777) & ~0700) {
-			Com_Printf( "LoadLibrary(\"%s\") failed: invalid permissions, must be 700 for security considerations\n", name);
-			return false;
-		}
-#endif
-	} else {
-		// softx requires we give up root now
-		setreuid(getuid(), getuid());
-		setegid(getgid());
-	}
-*/
-
-	if ( ( reflib_library = dlopen( fn, RTLD_NOW ) ) == 0 )
-	{
-		Com_Printf( "LoadLibrary(\"%s\") failed: %s\n", LOG_CLIENT, name , dlerror());
-		return false;
 	}
 
 	ri.Cmd_AddCommand = Cmd_AddCommand;
@@ -258,7 +131,6 @@ qboolean VID_LoadRefresh( char *name )
 	ri.Cmd_Argc = Cmd_Argc;
 	ri.Cmd_Argv = Cmd_Argv;
 	ri.Cmd_ExecuteText = Cbuf_ExecuteText;
-	ri.Con_Printf = VID_Printf;
 	ri.Sys_Error = VID_Error;
 	ri.FS_LoadFile = FS_LoadFile;
 	ri.FS_FreeFile = FS_FreeFile;
@@ -266,28 +138,8 @@ qboolean VID_LoadRefresh( char *name )
 	ri.Cvar_Get = Cvar_Get;
 	ri.Cvar_Set = Cvar_Set;
 	ri.Cvar_SetValue = Cvar_SetValue;
-	ri.Vid_GetModeInfo = VID_GetModeInfo;
 	ri.Vid_MenuInit = VID_MenuInit;
 	ri.Vid_NewWindow = VID_NewWindow;
-
-	//EXTENDED FUNCTIONS
-	rx.FS_FOpenFile = FS_FOpenFile;
-	rx.FS_FCloseFile = FS_FCloseFile;
-	rx.FS_Read = FS_Read;
-	
-	rx.APIVersion = EXTENDED_API_VERSION;
-
-	if ( ( GetRefAPI = (void *) dlsym( reflib_library, "GetRefAPI" ) ) == 0 )
-		Com_Error( ERR_FATAL, "dlsym failed on %s", name );
-
-	if ( ( GetExtraAPI = (GetExtraAPI_t) dlsym( reflib_library, "GetExtraAPI" ) ) == 0 )
-	{
-		Com_DPrintf ("No ExtraAPI found.\n");
-	} else {
-		Com_DPrintf ("Initializing ExtraAPI...");
-		GetExtraAPI (rx);
-		Com_DPrintf ("done.\n");
-	}
 
 	re = GetRefAPI( ri );
 
@@ -299,49 +151,17 @@ qboolean VID_LoadRefresh( char *name )
 
 	/* Init IN (Mouse) */
 	in_state.IN_CenterView_fp = IN_CenterView;
-	in_state.Key_Event_fp = Do_Key_Event;
 	in_state.viewangles = cl.viewangles;
 	in_state.in_strafe_state = &in_strafe.state;
 
-	if ((RW_IN_Init_fp = dlsym(reflib_library, "RW_IN_Init")) == NULL ||
-		(RW_IN_Shutdown_fp = dlsym(reflib_library, "RW_IN_Shutdown")) == NULL ||
-		(RW_IN_Activate_fp = dlsym(reflib_library, "RW_IN_Activate")) == NULL ||
-		(RW_IN_Commands_fp = dlsym(reflib_library, "RW_IN_Commands")) == NULL ||
-		(RW_IN_Move_fp = dlsym(reflib_library, "RW_IN_Move")) == NULL ||
-		(RW_IN_Frame_fp = dlsym(reflib_library, "RW_IN_Frame")) == NULL)
-		Sys_Error("No RW_IN functions in REF.\n");
-
 	Real_IN_Init();
 
-	if ( re.Init( 0, 0 ) == -1 )
+	if ( R_Init( 0, 0 ) == -1 )
 	{
-		re.Shutdown();
+		R_Shutdown();
 		VID_FreeReflib ();
 		return false;
 	}
-
-	/* Init KBD */
-#if 1
-	if ((KBD_Init_fp = dlsym(reflib_library, "KBD_Init")) == NULL ||
-		(KBD_Update_fp = dlsym(reflib_library, "KBD_Update")) == NULL ||
-		(KBD_Close_fp = dlsym(reflib_library, "KBD_Close")) == NULL)
-		Sys_Error("No KBD functions in REF.\n");
-#else
-	{
-		void KBD_Init(void);
-		void KBD_Update(void);
-		void KBD_Close(void);
-
-		KBD_Init_fp = KBD_Init;
-		KBD_Update_fp = KBD_Update;
-		KBD_Close_fp = KBD_Close;
-	}
-#endif
-	KBD_Init_fp(Do_Key_Event);
-
-	// give up root now
-	setreuid(getuid(), getuid());
-	setegid(getgid());
 
 	Com_Printf( "------------------------------------\n", LOG_CLIENT);
 	reflib_active = true;
@@ -359,54 +179,27 @@ update the rendering DLL and/or video mode to match.
 */
 void VID_ReloadRefresh (void)
 {
-	char name[100];
-	cvar_t *sw_mode;
+	S_StopAllSounds();
 
-	if ( vid_ref->modified )
-	{
-		S_StopAllSounds();
-	}
+	/*
+	** refresh has changed
+	*/
+	//vid_fullscreen->modified = true;
+	cl.refresh_prepped = false;
+	cl.frame.valid = false;
+	cls.disable_screen = true;
 
-	while (vid_ref->modified)
+	if ( !VID_LoadRefresh( "" ) )
 	{
 		/*
-		** refresh has changed
+		** drop the console if we fail to load a refresh
 		*/
-		vid_ref->modified = false;
-		//vid_fullscreen->modified = true;
-		cl.refresh_prepped = false;
-		cl.frame.valid = false;
-		cls.disable_screen = true;
-
-		sprintf( name, "ref_%s.so", vid_ref->string );
-		if ( !VID_LoadRefresh( name ) )
+		if ( cls.key_dest != key_console )
 		{
-			if ( strcmp (vid_ref->string, "soft") == 0 ||
-				strcmp (vid_ref->string, "softx") == 0 ) {
-				Com_Printf("Refresh failed\n", LOG_CLIENT);
-				sw_mode = Cvar_Get( "sw_mode", "0", 0 );
-				if (sw_mode->value != 0) {
-					Com_Printf("Trying mode 0\n", LOG_CLIENT);
-					Cvar_SetValue("sw_mode", 0);
-					if ( !VID_LoadRefresh( name ) )
-						Com_Error (ERR_FATAL, "Couldn't fall back to software refresh!");
-				} else
-					Com_Error (ERR_FATAL, "Couldn't fall back to software refresh!");
-			}
-
-			Cvar_Set( "vid_ref", "soft" );
-
-			/*
-			** drop the console if we fail to load a refresh
-			*/
-			if ( cls.key_dest != key_console )
-			{
-				Con_ToggleConsole_f();
-			}
+			Con_ToggleConsole_f();
 		}
-		cls.disable_screen = false;
 	}
-
+	cls.disable_screen = false;
 }
 
 /*
@@ -416,12 +209,6 @@ VID_Init
 */
 void VID_Init (void)
 {
-	/* Create the video variables so we know how to start the graphics drivers */
-	// if DISPLAY is defined, try X
-	if (getenv("DISPLAY"))
-		vid_ref = Cvar_Get ("vid_ref", "softx", CVAR_ARCHIVE);
-	else
-		vid_ref = Cvar_Get ("vid_ref", "soft", CVAR_ARCHIVE);
 	vid_xpos = Cvar_Get ("vid_xpos", "3", CVAR_ARCHIVE);
 	vid_ypos = Cvar_Get ("vid_ypos", "22", CVAR_ARCHIVE);
 	vid_fullscreen = Cvar_Get ("vid_fullscreen", "0", CVAR_ARCHIVE);
@@ -430,9 +217,6 @@ void VID_Init (void)
 	/* Add some console commands that we want to handle */
 	Cmd_AddCommand ("vid_restart", VID_Restart_f);
 
-	/* Disable the 3Dfx splash screen */
-	putenv("FX_GLIDE_NO_SPLASH=0");
-		
 	/* Start the graphics mode and load refresh DLL */
 	//VID_CheckChanges();
 	VID_ReloadRefresh();
@@ -447,13 +231,9 @@ void VID_Shutdown (void)
 {
 	if ( reflib_active )
 	{
-		if (KBD_Close_fp)
-			KBD_Close_fp();
-		if (RW_IN_Shutdown_fp)
-			RW_IN_Shutdown_fp();
-		KBD_Close_fp = NULL;
-		RW_IN_Shutdown_fp = NULL;
-		re.Shutdown ();
+		KBD_Close();
+		RW_IN_Shutdown();
+		R_Shutdown ();
 		VID_FreeReflib ();
 	}
 }
@@ -475,42 +255,21 @@ void IN_Init (void)
 
 void Real_IN_Init (void)
 {
-	if (RW_IN_Init_fp)
-		RW_IN_Init_fp(&in_state);
+	RW_IN_Init(&in_state);
 }
 
 void IN_Shutdown (void)
 {
-	if (RW_IN_Shutdown_fp)
-		RW_IN_Shutdown_fp();
+	RW_IN_Shutdown();
 }
 
 void IN_Commands (void)
 {
-	if (RW_IN_Commands_fp)
-		RW_IN_Commands_fp();
+	RW_IN_Commands();
 }
 
-void IN_Move (usercmd_t *cmd)
-{
-	if (RW_IN_Move_fp)
-		RW_IN_Move_fp(cmd);
-}
 
 void IN_Frame (void)
 {
-	if (RW_IN_Frame_fp)
-		RW_IN_Frame_fp();
+	RW_IN_Frame();
 }
-
-void IN_Activate (qboolean active)
-{
-	if (RW_IN_Activate_fp)
-		RW_IN_Activate_fp(active);
-}
-
-void Do_Key_Event(int key, qboolean down)
-{
-	Key_Event(key, down, Sys_Milliseconds());
-}
-

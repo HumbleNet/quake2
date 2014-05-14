@@ -17,16 +17,24 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
+
+
+#ifdef _WIN32
+
+
+#define WIN32_LEAN_AND_MEAN
+// before qcommon.h or mingw-w64 explodes
+#include <windows.h>
 #include <float.h>
+#define CINTERFACE 1
+#include <mmsystem.h>
+#include <dsound.h>
 
 #include "../client/client.h"
 
 #include "winquake.h"
 #include "../client/snd_loc.h"
 
-
-#define CINTERFACE 1
-#include <dsound.h>
 
 #define iDirectSoundCreate(a,b,c)	pDirectSoundCreate(a,b,c)
 
@@ -55,6 +63,8 @@ static int	sample16;
 static int	snd_sent, snd_completed;
 
 //extern cvar_t *s_dx8;
+
+static HWND hwnd = NULL;
 
 /* 
  * Global variables. Must be visible to window-procedure function 
@@ -144,7 +154,7 @@ static qboolean DS_CreateBuffers( void )
 
 	Com_DPrintf("...setting EXCLUSIVE coop level: " );
 
-	ret = pDS->lpVtbl->SetCooperativeLevel(pDS, cl_hwnd, DSSCL_EXCLUSIVE);
+	ret = pDS->lpVtbl->SetCooperativeLevel(pDS, hwnd, DSSCL_EXCLUSIVE);
 	if (ret != DS_OK)
 	{
 		Com_Printf ("failed (%s)\n", LOG_CLIENT, DSoundError(ret));
@@ -236,7 +246,7 @@ static qboolean DS_CreateBuffers( void )
 		Com_DPrintf( "...using primary buffer\n" );
 
 		Com_DPrintf( "...setting WRITEPRIMARY coop level: " );
-		pDS->lpVtbl->SetCooperativeLevel (pDS, cl_hwnd, DSSCL_WRITEPRIMARY);
+		pDS->lpVtbl->SetCooperativeLevel (pDS, hwnd, DSSCL_WRITEPRIMARY);
 		if (DS_OK != ret)
 		{
 			Com_Printf ("failed (%s)\n", LOG_CLIENT, DSoundError(ret));
@@ -291,7 +301,7 @@ static void DS_DestroyBuffers( void )
 	if ( pDS )
 	{
 		Com_DPrintf( "...setting NORMAL coop level\n" );
-		pDS->lpVtbl->SetCooperativeLevel( pDS, cl_hwnd, DSSCL_NORMAL );
+		pDS->lpVtbl->SetCooperativeLevel( pDS, hwnd, DSSCL_NORMAL );
 	}
 
 	if ( pDSBuf )
@@ -390,7 +400,7 @@ SNDDMA_InitDirect
 Direct-Sound support
 ==================
 */
-sndinitstat SNDDMA_InitDirect (void)
+qboolean SNDDMA_InitDirect(void)
 {
 	DSCAPS			dscaps;
 	HRESULT			hresult;
@@ -638,7 +648,7 @@ Try to find a sound device to mix for.
 Returns false if nothing is found.
 ==================
 */
-int SNDDMA_Init (int fullInit)
+qboolean SNDDMA_Init(int fullInit)
 {
 	sndinitstat	stat;
 
@@ -701,6 +711,8 @@ int SNDDMA_Init (int fullInit)
 	}
 
 	snd_firsttime = false;
+
+	hwnd = GetActiveWindow();
 
 	//snd_buffer_count = 1;
 
@@ -898,17 +910,19 @@ void S_Activate (qboolean active)
 {
 	if ( active )
 	{
-		if ( pDS && cl_hwnd && snd_isdirect )
+		if ( pDS && hwnd && snd_isdirect )
 		{
 			DS_CreateBuffers();
 		}
 	}
 	else
 	{
-		if ( pDS && cl_hwnd && snd_isdirect )
+		if ( pDS && hwnd && snd_isdirect )
 		{
 			DS_DestroyBuffers();
 		}
 	}
 }
 
+
+#endif  // _WIN32

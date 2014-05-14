@@ -814,7 +814,7 @@ static qboolean SV_SendClientDatagram (client_t *client)
 	messagelist_t	*message, *last;
 
 #ifndef NDEBUG
-	byte			*wanted;
+	byte			*wanted = NULL;
 #endif
 
 	//init unreliable portion

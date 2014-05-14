@@ -19,6 +19,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // net_wins.c
 
+
+#ifdef _WIN32
+
+
 #define WIN32_LEAN_AND_MEAN
 //#include "winsock.h"
 //#include "wsipx.h"
@@ -505,3 +509,6 @@ char *NET_ErrorString (void)
 	default: return va("UNDEFINED ERROR %d", code);
 	}
 }
+
+
+#endif   // _WIN32

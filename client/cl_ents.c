@@ -806,7 +806,7 @@ static void CL_DemoDeltaPlayerstate (const frame_t *from, frame_t *to)
 	int				pflags;
 	player_state_t			*ps;
 	const player_state_t	*ops;
-	static player_state_t	dummy = {{0}};
+	static player_state_t	dummy = PLAYER_STATE_EMPTY;
 	int				statbits;
 
 	ps = &to->playerstate;
@@ -1017,7 +1017,7 @@ static void CL_ParsePlayerstate (const frame_t *oldframe, frame_t *newframe, int
 	// parse the pmove_state_t
 	//
 	if (flags & PS_M_TYPE)
-		state->pmove.pm_type = MSG_ReadByte (&net_message);
+		state->pmove.pm_type = (pmtype_t) MSG_ReadByte (&net_message);
 
 	if (flags & PS_M_ORIGIN)
 	{
@@ -1558,19 +1558,19 @@ INTERPOLATE BETWEEN FRAMES TO GET RENDERING PARMS
 		strcpy(model, "male");
 
 	Com_sprintf (buffer, sizeof(buffer), "players/%s/%s", model, base+1);
-	mdl = re.RegisterModel(buffer);
+	mdl = R_RegisterModel(buffer);
 	if (!mdl) {
 		// not found, try default weapon model
 		Com_sprintf (buffer, sizeof(buffer), "players/%s/weapon.md2", model);
-		mdl = re.RegisterModel(buffer);
+		mdl = R_RegisterModel(buffer);
 		if (!mdl) {
 			// no, revert to the male model
 			Com_sprintf (buffer, sizeof(buffer), "players/%s/%s", "male", base+1);
-			mdl = re.RegisterModel(buffer);
+			mdl = R_RegisterModel(buffer);
 			if (!mdl) {
 				// last try, default male weapon.md2
 				Com_sprintf (buffer, sizeof(buffer), "players/male/weapon.md2");
-				mdl = re.RegisterModel(buffer);
+				mdl = R_RegisterModel(buffer);
 			}
 		} 
 	}
@@ -1887,18 +1887,18 @@ lerp_time;*/
 				{
 					if(!strncmp((char *)ent.skin, "players/male", 12))
 					{
-						ent.skin = re.RegisterSkin ("players/male/disguise.pcx");
-						ent.model = re.RegisterModel ("players/male/tris.md2");
+						ent.skin = R_RegisterSkin ("players/male/disguise.pcx");
+						ent.model = R_RegisterModel ("players/male/tris.md2");
 					}
 					else if(!strncmp((char *)ent.skin, "players/female", 14))
 					{
-						ent.skin = re.RegisterSkin ("players/female/disguise.pcx");
-						ent.model = re.RegisterModel ("players/female/tris.md2");
+						ent.skin = R_RegisterSkin ("players/female/disguise.pcx");
+						ent.model = R_RegisterModel ("players/female/tris.md2");
 					}
 					else if(!strncmp((char *)ent.skin, "players/cyborg", 14))
 					{
-						ent.skin = re.RegisterSkin ("players/cyborg/disguise.pcx");
-						ent.model = re.RegisterModel ("players/cyborg/tris.md2");
+						ent.skin = R_RegisterSkin ("players/cyborg/disguise.pcx");
+						ent.model = R_RegisterModel ("players/cyborg/tris.md2");
 					}
 				}
 //PGM
@@ -2395,7 +2395,7 @@ static void CL_CalcViewValues (void)
 	ops = &oldframe->playerstate;
 
 	// see if the player entity was teleported this frame
-	if ( fabs(ops->pmove.origin[0] - ps->pmove.origin[0]) > 256*8
+	if ( abs(ops->pmove.origin[0] - ps->pmove.origin[0]) > 256*8
 		|| abs(ops->pmove.origin[1] - ps->pmove.origin[1]) > 256*8
 		|| abs(ops->pmove.origin[2] - ps->pmove.origin[2]) > 256*8)
 		ops = ps;		// don't interpolate

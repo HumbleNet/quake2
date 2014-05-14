@@ -139,10 +139,94 @@ typedef struct
 	int		api_version;
 
 	// called when the library is loaded
-	int		(EXPORT *Init) ( void *hinstance, void *wndproc );
+	int		(*Init) ( void *hinstance, void *wndproc );
 
-	// called before the library is unloaded
-	void	(EXPORT *Shutdown) (void);
+	void	(*DrawGetPicSize) (int *w, int *h, char *name);	// will return 0 0 if not found
+	void	(*DrawPic) (int x, int y, char *name);
+	void	(*DrawStretchPic) (int x, int y, int w, int h, char *name);
+	void	(*DrawTileClear) (int x, int y, int w, int h, char *name);
+	void	(*DrawFill) (int x, int y, int w, int h, int c);
+	void	(*DrawFadeScreen) (void);
+
+	// Draw images for cinematic rendering (which can have a different palette). Note that calls
+	void	(*DrawStretchRaw) (int x, int y, int w, int h, int cols, int rows, byte *data);
+} refexport_t;
+
+
+typedef struct
+{
+	void	(*Sys_Error) (int err_level, const char *str, ...) __attribute__ ((format (printf, 2, 3), noreturn));
+
+	void	(*Cmd_AddCommand) (const char *name, void(*cmd)(void));
+	void	(*Cmd_RemoveCommand) (const char *name);
+	int		(*Cmd_Argc) (void);
+	char	*(*Cmd_Argv) (int i);
+	void	(*Cmd_ExecuteText) (int exec_when, char *text);
+
+	// files will be memory mapped read only
+	// the returned buffer may be part of a larger pak file,
+	// or a discrete file from anywhere in the quake search path
+	// a -1 return means the file does not exist
+	// NULL can be passed for buf to just determine existance
+	int		(*FS_LoadFile) (const char *name, void **buf);
+	void	(*FS_FreeFile) (void *buf);
+
+	// gamedir will be the current directory that generated
+	// files should be stored to, ie: "f:\quake\id1"
+	char	*(*FS_Gamedir) (void);
+
+	cvar_t	*(*Cvar_Get) (const char *name, const char *value, int flags);
+	cvar_t	*(*Cvar_Set)( const char *name, const char *value );
+	void	 (*Cvar_SetValue)( const char *name, float value );
+
+	void		(*Vid_MenuInit)( void );
+	void		(*Vid_NewWindow)( int width, int height );
+} refimport_t;
+
+
+typedef struct in_state {
+	// Pointers to functions back in client, set by vid_so
+	void (*IN_CenterView_fp)(void);
+	vec_t *viewangles;
+	int *in_strafe_state;
+} in_state_t;
+
+
+refexport_t GetRefAPI (refimport_t rimp );
+
+
+void RW_IN_Init(in_state_t *in_state_p);
+void RW_IN_Shutdown(void);
+void RW_IN_Commands(void);
+void RW_IN_Frame(void);
+
+void KBD_Update(void);
+void KBD_Close(void);
+
+
+typedef struct vrect_s
+{
+	int32				x, y, width, height;
+} vrect_t;
+
+#define __VIDDEF_T
+typedef struct
+{
+	uint32		width, height;			// coordinates from main game
+} viddef_t;
+
+extern	viddef_t	viddef;				// global video state
+
+// Video module initialisation etc
+void	VID_Init(void);
+void	VID_Shutdown(void);
+void	VID_CheckChanges(void);
+
+void	VID_MenuInit(void);
+void	VID_MenuDraw(void);
+const char *VID_MenuKey(int);
+void VID_Printf (int print_level, const char *fmt, ...) __attribute__((format (printf, 2, 3)));
+
 
 	// All data that will be used in a level should be
 	// registered before rendering any frames to prevent disk hits,
@@ -157,87 +241,26 @@ typedef struct
 	// are flood filled to eliminate mip map edge errors, and pics have
 	// an implicit "pics/" prepended to the name. (a pic name that starts with a
 	// slash will not use the "pics/" prefix or the ".pcx" postfix)
-	void	(EXPORT *BeginRegistration) (char *map);
-	struct model_s * (EXPORT *RegisterModel) (char *name);
-	struct image_s * (EXPORT *RegisterSkin) (char *name);
-	struct image_s * (EXPORT *RegisterPic) (char *name);
-	void	(EXPORT *SetSky) (char *name, float rotate, vec3_t axis);
-	void	(EXPORT *EndRegistration) (void);
+void	R_BeginRegistration (char *map);
+struct model_s	* R_RegisterModel (char *name);
+struct image_s	* R_RegisterSkin (char *name);
+struct image_s	* Draw_FindPic (char *name);
+void R_SetSky (char *name, float rotate, vec3_t axis);
+void R_EndRegistration (void);
 
-	void	(EXPORT *RenderFrame) (refdef_t *fd);
 
-	void	(EXPORT *DrawGetPicSize) (int *w, int *h, char *name);	// will return 0 0 if not found
-	void	(EXPORT *DrawPic) (int x, int y, char *name);
-	void	(EXPORT *DrawStretchPic) (int x, int y, int w, int h, char *name);
-	void	(EXPORT *DrawChar) (int x, int y, int c);
-	void	(EXPORT *DrawTileClear) (int x, int y, int w, int h, char *name);
-	void	(EXPORT *DrawFill) (int x, int y, int w, int h, int c);
-	void	(EXPORT *DrawFadeScreen) (void);
+void R_RenderFrame (refdef_t *fd);
 
-	// Draw images for cinematic rendering (which can have a different palette). Note that calls
-	void	(EXPORT *DrawStretchRaw) (int x, int y, int w, int h, int cols, int rows, byte *data);
 
-	/*
-	** video mode and refresh state management entry points
-	*/
-	void	(EXPORT *CinematicSetPalette)( const unsigned char *palette);	// NULL = game palette
-	void	(EXPORT *BeginFrame)( float camera_separation );
-	void	(EXPORT *EndFrame) (void);
+void	R_DrawString(int x, int y, const char *s, int xorVal, unsigned int maxLen);
+void	R_DrawChar (int x, int y, int c);
 
-	void	(EXPORT *AppActivate)( qboolean activate );
-} refexport_t;
 
-//
-// these are the functions imported by the refresh module
-//
-typedef struct
-{
-	//for backwards compatibility
-	int			APIVersion;
+int 	R_Init( void *hinstance, void *hWnd );
+void	R_Shutdown( void );
+void	R_SetPalette ( const unsigned char *palette);
+void	R_BeginFrame(void);
+void GLimp_EndFrame(void);
 
-	//**********************************************************************
-	// extended renderer API functions, check for NULL in ref before using!!
-	//**********************************************************************
-	int			(IMPORT *FS_FOpenFile) (const char *filename, FILE **file, handlestyle_t openHandle, qboolean *closeHandle);
-	void		(IMPORT *FS_FCloseFile) (FILE *file);
-	void		(IMPORT *FS_Read) (void *buffer, int len, FILE *f);
-} refimportnew_t;
-
-typedef struct
-{
-	void	(IMPORT *Sys_Error) (int err_level, const char *str, ...) __attribute__ ((format (printf, 2, 3)));
-
-	void	(IMPORT *Cmd_AddCommand) (const char *name, void(*cmd)(void));
-	void	(IMPORT *Cmd_RemoveCommand) (const char *name);
-	int		(IMPORT *Cmd_Argc) (void);
-	char	*(IMPORT *Cmd_Argv) (int i);
-	void	(IMPORT *Cmd_ExecuteText) (int exec_when, char *text);
-
-	void	(IMPORT *Con_Printf) (int print_level, const char *str, ...) __attribute__ ((format (printf, 2, 3)));
-
-	// files will be memory mapped read only
-	// the returned buffer may be part of a larger pak file,
-	// or a discrete file from anywhere in the quake search path
-	// a -1 return means the file does not exist
-	// NULL can be passed for buf to just determine existance
-	int		(IMPORT *FS_LoadFile) (const char *name, void **buf);
-	void	(IMPORT *FS_FreeFile) (void *buf);
-
-	// gamedir will be the current directory that generated
-	// files should be stored to, ie: "f:\quake\id1"
-	char	*(IMPORT *FS_Gamedir) (void);
-
-	cvar_t	*(IMPORT *Cvar_Get) (const char *name, const char *value, int flags);
-	cvar_t	*(IMPORT *Cvar_Set)( const char *name, const char *value );
-	void	 (IMPORT *Cvar_SetValue)( const char *name, float value );
-
-	qboolean	(IMPORT *Vid_GetModeInfo)(unsigned int *width, unsigned int *height, int mode);
-	void		(IMPORT *Vid_MenuInit)( void );
-	void		(IMPORT *Vid_NewWindow)( int width, int height );
-} refimport_t;
-
-// this is the only function actually exported at the linker level
-typedef	refexport_t	(EXPORT *GetRefAPI_t) (refimport_t);
-typedef	void (EXPORT *GetExtraAPI_t) (refimportnew_t);
 
 #endif // __REF_H

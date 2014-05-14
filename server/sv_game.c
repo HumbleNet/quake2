@@ -252,6 +252,7 @@ PF_error
 Abort the server with a game error
 ===============
 */
+void EXPORT PF_error (const char *fmt, ...) __attribute__((format (printf, 1, 2), noreturn));
 void EXPORT PF_error (const char *fmt, ...)
 {
 	char		msg[1024];
@@ -301,7 +302,7 @@ void EXPORT PF_setmodel (edict_t *ent, const char *name)
 
 }
 
-__inline char *SV_FixPlayerSkin (char *val, char *player_name)
+static char *SV_FixPlayerSkin (char *val, char *player_name)
 {
 	static char	fixed_skin[MAX_QPATH];
 
@@ -853,12 +854,6 @@ SV_InitGameProgs
 Init the game subsystem for a new map
 ===============
 */
-#ifdef DEDICATED_ONLY
-void EXPORT SCR_DebugGraph (float value, int color)
-{
-}
-#endif
-
 void SV_InitGameProgs (void)
 {
 	edict_t			*ent;

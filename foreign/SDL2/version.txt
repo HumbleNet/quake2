@@ -1,0 +1,6 @@
+Author: Sam Lantinga <slouken@libsdl.org>
+Date:   Wed May 13 22:39:32 2015 -0700
+
+    Added a userdata parameter to SDL_SetWindowsMessageHook()
+
+Local modifications! Take care when updating

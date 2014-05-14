@@ -444,7 +444,7 @@ qboolean Pickup_Key (edict_t *ent, edict_t *other)
 
 //======================================================================
 
-qboolean Add_Ammo (edict_t *ent, gitem_t *item, int count)
+qboolean Add_Ammo (edict_t *ent, const gitem_t *item, int count)
 {
 	int			index;
 	int			max;
@@ -990,7 +990,7 @@ This will be called for each item spawned in a level,
 and for each item in each client's inventory.
 ===============
 */
-void PrecacheItem (gitem_t *it)
+void PrecacheItem (const gitem_t *it)
 {
 	char	*s, *start;
 	char	data[MAX_QPATH];
@@ -1131,10 +1131,37 @@ void SpawnItem (edict_t *ent, gitem_t *item)
 
 //======================================================================
 
+
+// can't be const because they will be eventually passed to SpawnItem which
+// might change them
 gitem_t	itemlist[] = 
 {
 	{
 		NULL
+
+		, NULL
+		, NULL
+		, NULL
+		, NULL
+
+		, NULL
+		, NULL
+		, 0
+		, NULL
+
+		, NULL
+		, NULL
+		, 0
+
+		, 0
+		, NULL
+		, 0
+
+		, 0
+
+		, NULL
+		, 0
+		, NULL
 	},	// leave index 0 alone
 
 	//
@@ -2112,7 +2139,32 @@ tank commander's head
 	},
 
 	// end of list marker
-	{NULL}
+	{
+		  NULL
+		, NULL
+		, NULL
+		, NULL
+		, NULL
+
+		, NULL
+		, NULL
+		, 0
+		, NULL
+
+		, NULL
+		, NULL
+		, 0
+
+		, 0
+		, NULL
+		, 0
+
+		, 0
+
+		, NULL
+		, 0
+		, NULL
+	}
 };
 
 

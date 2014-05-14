@@ -100,7 +100,10 @@ cvar_t		*s_focusfree = &uninitialized_cvar;
 int		s_rawend;
 portable_samplepair_t	s_rawsamples[MAX_RAW_SAMPLES];
 
+
 #ifdef USE_OPENAL
+
+
 cvar_t		*s_openal_volume;
 cvar_t		*s_openal_device;
 static openal_listener_t	s_openal_listener;
@@ -108,12 +111,15 @@ static openal_channel_t		s_openal_channels[MAX_CHANNELS];
 static int					s_openal_numChannels;
 static int					s_openal_frameCount;
 
-#ifdef _WIN32
+
+#endif  // USE_OPENAL
+
+
+#if 0 //def _WIN32
 const GUID			DSPROPSETID_EAX20_ListenerProperties = {0x306a6a8, 0xb224, 0x11d2, {0x99, 0xe5, 0x0, 0x0, 0xe8, 0xd8, 0xc7, 0x22}};
 const GUID			DSPROPSETID_EAX20_BufferProperties = {0x306a6a7, 0xb224, 0x11d2, {0x99, 0xe5, 0x0, 0x0, 0xe8, 0xd8, 0xc7, 0x22}};
 #endif
 
-#endif
 
 
 // ====================================================================
@@ -138,7 +144,10 @@ void S_SoundInfo_f(void)
     Com_Printf("%p dma buffer\n", LOG_CLIENT, dma.buffer);
 }
 
+
 #ifdef USE_OPENAL
+
+
 static void S_OpenAL_AllocChannels (void)
 {
 	openal_channel_t	*ch;
@@ -146,15 +155,18 @@ static void S_OpenAL_AllocChannels (void)
 
 	for (i = 0, ch = s_openal_channels; i < MAX_CHANNELS; i++, ch++)
 	{
-		qalGenSources(1, &ch->sourceNum);
+		alGenSources(1, &ch->sourceNum);
 
-		if (qalGetError() != AL_NO_ERROR)
+		if (alGetError() != AL_NO_ERROR)
 			break;
 
 		s_openal_numChannels++;
 	}
 }
-#endif
+
+
+#endif  // USE_OPENAL
+
 
 /*
 ================
@@ -183,11 +195,13 @@ void S_Init (int fullInit)
 	//s_dx8 = Cvar_Get ("s_dx8", "0", CVAR_ARCHIVE);
 
 #ifdef USE_OPENAL
+
 	s_openal_device = Cvar_Get ("s_openal_device", "", 0);
 	s_openal_extensions = Cvar_Get ("s_openal_extensions", "1", 0);
 	s_openal_eax = Cvar_Get ("s_openal_eax", "0", 0);
 	s_openal_volume = Cvar_Get ("s_openal_volume", "1", 0);
-#endif
+
+#endif  // USE_OPENAL
 
 	s_volume = Cvar_Get ("s_volume", "0.5", CVAR_ARCHIVE);
 	s_show = Cvar_Get ("s_show", "0", 0);
@@ -198,8 +212,6 @@ void S_Init (int fullInit)
 		Com_Printf ("not initializing.\n", LOG_CLIENT|LOG_NOTICE);
 	else
 	{
-		if (cv->intvalue == 2)
-		{
 #ifdef USE_OPENAL
 			if (ALimp_Init ())
 			{
@@ -216,33 +228,12 @@ void S_Init (int fullInit)
 			{
 				Com_Printf ("OpenAL failed to initialize; no sound available\n", LOG_CLIENT);
 			}
-#else
-			Com_Printf ("This binary was compiled without OpenAL support.\n", LOG_CLIENT);
-#endif
-		}
-		else
-		{
-			if (!SNDDMA_Init(fullInit))
-				return;
 
-			Cmd_AddCommand("play", S_Play);
-			Cmd_AddCommand("stopsound", S_StopAllSounds);
-			Cmd_AddCommand("soundlist", S_SoundList_f);
-			Cmd_AddCommand("soundinfo", S_SoundInfo_f);
+#else  // USE_OPENAL
 
-			S_InitScaletable ();
+		Com_Printf("OpenAL not compiled in; no sound available\n", LOG_CLIENT);
 
-			sound_started = 1;
-			num_sfx = 0;
-
-			soundtime = 0;
-			paintedtime = 0;
-
-			if (!cl_quietstartup->intvalue || developer->intvalue)
-				Com_Printf ("sound sampling rate: %i\n", LOG_CLIENT|LOG_NOTICE, dma.speed);
-
-			S_StopAllSounds ();
-		}
+#endif  // USE_OPENAL
 	}
 
 	if (!cl_quietstartup->intvalue || developer->intvalue)
@@ -254,7 +245,9 @@ void S_Init (int fullInit)
 // Shutdown sound engine
 // =======================================================================
 
+
 #ifdef USE_OPENAL
+
 
 static void S_OpenAL_FreeChannels (void)
 {
@@ -263,7 +256,7 @@ static void S_OpenAL_FreeChannels (void)
 
 	for (i = 0, ch = s_openal_channels; i < s_openal_numChannels; i++, ch++)
 	{
-		qalDeleteSources(1, &ch->sourceNum);
+		alDeleteSources(1, &ch->sourceNum);
 		memset(ch, 0, sizeof(*ch));
 	}
 
@@ -283,11 +276,13 @@ void S_OpenAL_FreeSounds (void)
 	{
 		sfx = &known_sfx[i];
 
-		qalDeleteBuffers(1, &sfx->bufferNum);
+		alDeleteBuffers(1, &sfx->bufferNum);
 	}
 }
 
-#endif
+
+#endif  // USE_OPENAL
+
 
 void S_Shutdown(void)
 {
@@ -303,7 +298,7 @@ void S_Shutdown(void)
 		S_OpenAL_FreeSounds ();
 		S_OpenAL_FreeChannels ();
 	}
-#endif
+#endif  // USE_OPENAL
 
 	// free all sounds
 	for (i=0, sfx=known_sfx ; i < num_sfx ; i++,sfx++)
@@ -328,7 +323,7 @@ void S_Shutdown(void)
 		ALimp_Shutdown ();
 	}
 	else
-#endif
+#endif  // USE_OPENAL
 	{
 		SNDDMA_Shutdown();
 		Cmd_RemoveCommand("soundlist");
@@ -365,7 +360,7 @@ sfx_t *S_FindName (char *name, qboolean create)
 			return &known_sfx[i];
 		}*/
 
-	data = rbfind (name, knownsounds);
+	data = (void **) rbfind (name, knownsounds);
 	if (data)
 	{
 		sfx = *(sfx_t **)data;
@@ -401,15 +396,13 @@ sfx_t *S_FindName (char *name, qboolean create)
 	strcpy (sfx->name, name);
 	sfx->registration_sequence = s_registration_sequence;
 
-#ifdef USE_OPENAL
 	sfx->loaded = false;
 	sfx->samples = 0;
 	sfx->rate = 0;
 	sfx->format = 0;
 	sfx->bufferNum = 0;
-#endif
 
-	data = rbsearch (sfx->name, knownsounds);
+	data = (void **) rbsearch (sfx->name, knownsounds);
 	*data = sfx;
 	
 	return sfx;
@@ -447,19 +440,17 @@ sfx_t *S_AliasName (char *aliasname, char *truename)
 	//memset (sfx, 0, sizeof(*sfx));
 	sfx->cache = NULL;
 
-#ifdef USE_OPENAL
 	sfx->loaded = false;
 	sfx->samples = 0;
 	sfx->rate = 0;
 	sfx->format = 0;
 	sfx->bufferNum = 0;
-#endif
 
 	strcpy (sfx->name, aliasname);
 	sfx->registration_sequence = s_registration_sequence;
 	sfx->truename = CopyString (truename, TAGMALLOC_CLIENT_SFX);
 
-	data = rbsearch (sfx->name, knownsounds);
+	data = (void **) rbsearch (sfx->name, knownsounds);
 	*data = sfx;
 
 	return sfx;
@@ -502,7 +493,7 @@ sfx_t *S_RegisterSound (char *name)
 			S_OpenAL_LoadSound (sfx);
 		}
 		else
-#endif
+#endif  // USE_OPENAL
 		{
 			S_LoadSound (sfx);
 		}
@@ -539,9 +530,7 @@ void S_EndRegistration (void)
 			rbdelete (sfx->name, knownsounds);
 			sfx->cache = NULL;
 			sfx->name[0] = 0;
-#ifdef USE_OPENAL
 			sfx->loaded = false;
-#endif
 			//memset (sfx, 0, sizeof(*sfx));
 		}
 		else
@@ -549,7 +538,7 @@ void S_EndRegistration (void)
 #ifdef USE_OPENAL
 			if (openal_active)
 				continue;
-#endif
+#endif  // USE_OPENAL
 
 			if (sfx->cache)
 			{
@@ -569,7 +558,7 @@ void S_EndRegistration (void)
 		if (openal_active)
 			S_OpenAL_LoadSound (sfx);
 		else
-#endif
+#endif  // USE_OPENAL
 			S_LoadSound (sfx);
 	}
 
@@ -879,7 +868,11 @@ if pos is NULL, the sound will be dynamically sourced from the entity
 Entchannel 0 will never override a playing sound
 ====================
 */
+
+
 #ifdef USE_OPENAL
+
+
 void S_OpenAL_StartSound (const vec3_t position, int entNum, int entChannel, sfx_t *sfx, float volume, float attenuation, int timeOfs)
 {
 	playsound_t *ps, *sort;
@@ -937,12 +930,14 @@ void S_OpenAL_StartSound (const vec3_t position, int entNum, int entChannel, sfx
 	ps->next->prev = ps;
 	ps->prev->next = ps;
 }
-#endif
+
+
+#endif  // USE_OPENAL
+
 
 void S_StartSound(vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float fvol, float attenuation, float timeofs)
 {
 	sfxcache_t	*sc;
-	int			vol;
 	playsound_t	*ps, *sort;
 	int			start;
 
@@ -952,7 +947,7 @@ void S_StartSound(vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float f
 		S_OpenAL_StartSound (origin, entnum, entchannel, sfx, fvol, attenuation, (int)(timeofs * 1000.0));
 		return;
 	}
-#endif
+#endif  // USE_OPENAL
 
 	if (!sound_started)
 		return;
@@ -969,8 +964,6 @@ void S_StartSound(vec3_t origin, int entnum, int entchannel, sfx_t *sfx, float f
 	sc = S_LoadSound (sfx);
 	if (!sc)
 		return;		// couldn't load the sound's data
-
-	vol = (int)(fvol*255);
 
 	// make the playsound_t
 	ps = S_AllocPlaysound ();
@@ -1069,7 +1062,7 @@ void S_ClearBuffer (void)
 	{
 		return;
 	}
-#endif
+#endif  // USE_OPENAL
 
 	s_rawend = 0;
 
@@ -1084,15 +1077,21 @@ void S_ClearBuffer (void)
 	SNDDMA_Submit ();
 }
 
+
 #ifdef USE_OPENAL
+
+
 static void S_OpenAL_StopChannel (openal_channel_t *ch)
 {
 	ch->sfx = NULL;
 
-	qalSourceStop(ch->sourceNum);
-	qalSourcei(ch->sourceNum, AL_BUFFER, 0);
+	alSourceStop(ch->sourceNum);
+	alSourcei(ch->sourceNum, AL_BUFFER, 0);
 }
-#endif
+
+
+#endif  // USE_OPENAL
+
 
 /*
 ==================
@@ -1136,7 +1135,7 @@ void S_StopAllSounds(void)
 		// Reset frame count
 		s_openal_frameCount = 0;
 	}
-#endif
+#endif  // USE_OPENAL
 
 	// clear all the channels
 	memset(channels, 0, sizeof(channels));
@@ -1279,7 +1278,7 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 #ifdef USE_OPENAL
 	if (openal_active)
 		return;
-#endif
+#endif  // USE_OPENAL
 
 	if (s_rawend < paintedtime)
 		s_rawend = paintedtime;
@@ -1362,20 +1361,23 @@ void S_RawSamples (int samples, int rate, int width, int channels, byte *data)
 	}
 }
 
+
+#ifdef USE_OPENAL
+
+
 /*
  =================
  S_FreeChannels
  =================
 */
-#ifdef USE_OPENAL
 static void S_OpenAL_PlayChannel (openal_channel_t *ch, sfx_t *sfx)
 {
 	ch->sfx = sfx;
 
-	qalSourcei(ch->sourceNum, AL_BUFFER, sfx->bufferNum);
-	qalSourcei(ch->sourceNum, AL_LOOPING, ch->loopSound);
-	qalSourcei(ch->sourceNum, AL_SOURCE_RELATIVE, AL_FALSE);
-	qalSourcePlay(ch->sourceNum);
+	alSourcei(ch->sourceNum, AL_BUFFER, sfx->bufferNum);
+	alSourcei(ch->sourceNum, AL_LOOPING, ch->loopSound);
+	alSourcei(ch->sourceNum, AL_SOURCE_RELATIVE, AL_FALSE);
+	alSourcePlay(ch->sourceNum);
 }
 
 openal_channel_t *S_OpenAL_PickChannel (int entNum, int entChannel)
@@ -1432,8 +1434,8 @@ openal_channel_t *S_OpenAL_PickChannel (int entNum, int entChannel)
 	ch->startTime = cl.time;
 
 	// Make sure this channel is stopped
-	qalSourceStop(ch->sourceNum);
-	qalSourcei(ch->sourceNum, AL_BUFFER, 0);
+	alSourceStop(ch->sourceNum);
+	alSourcei(ch->sourceNum, AL_BUFFER, 0);
 
 	return ch;
 }
@@ -1445,15 +1447,15 @@ static void S_OpenAL_SpatializeChannel (openal_channel_t *ch)
 	// Update position and velocity
 	if (ch->entNum == cl.playernum+1 || !ch->distanceMult)
 	{
-		qalSourcefv(ch->sourceNum, AL_POSITION, s_openal_listener.position);
-		//qalSourcefv(ch->sourceNum, AL_VELOCITY, s_openal_listener.velocity);
+		alSourcefv(ch->sourceNum, AL_POSITION, s_openal_listener.position);
+		//alSourcefv(ch->sourceNum, AL_VELOCITY, s_openal_listener.velocity);
 	}
 	else
 	{
 		if (ch->fixedPosition)
 		{
-			qalSource3f(ch->sourceNum, AL_POSITION, ch->position[1], ch->position[2], -ch->position[0]);
-			//qalSource3f(ch->sourceNum, AL_VELOCITY, 0, 0, 0);
+			alSource3f(ch->sourceNum, AL_POSITION, ch->position[1], ch->position[2], -ch->position[0]);
+			//alSource3f(ch->sourceNum, AL_VELOCITY, 0, 0, 0);
 		}
 		else
 		{
@@ -1462,23 +1464,23 @@ static void S_OpenAL_SpatializeChannel (openal_channel_t *ch)
 			else
 				Snd_GetEntityOrigin (ch->entNum, position);
 
-			qalSource3f(ch->sourceNum, AL_POSITION, position[1], position[2], -position[0]);
-			//qalSource3f(ch->sourceNum, AL_VELOCITY, velocity[1], velocity[2], -velocity[0]);
+			alSource3f(ch->sourceNum, AL_POSITION, position[1], position[2], -position[0]);
+			//alSource3f(ch->sourceNum, AL_VELOCITY, velocity[1], velocity[2], -velocity[0]);
 		}
 	}
 
 	// Update min/max distance
 	if (ch->distanceMult)
-		qalSourcef(ch->sourceNum, AL_REFERENCE_DISTANCE, 240.0f * ch->distanceMult);
+		alSourcef(ch->sourceNum, AL_REFERENCE_DISTANCE, 240.0f * ch->distanceMult);
 	else
-		qalSourcef(ch->sourceNum, AL_REFERENCE_DISTANCE,  8192);
+		alSourcef(ch->sourceNum, AL_REFERENCE_DISTANCE,  8192);
 
-	qalSourcef(ch->sourceNum, AL_MAX_DISTANCE, 8192);
+	alSourcef(ch->sourceNum, AL_MAX_DISTANCE, 8192);
 
 	// Update volume and rolloff factor
-	qalSourcef(ch->sourceNum, AL_GAIN, s_openal_volume->value * ch->volume);
+	alSourcef(ch->sourceNum, AL_GAIN, s_openal_volume->value * ch->volume);
 
-	qalSourcef(ch->sourceNum, AL_ROLLOFF_FACTOR, 1.0f);
+	alSourcef(ch->sourceNum, AL_ROLLOFF_FACTOR, 1.0f);
 }
 
 static void S_OpenAL_AddLoopingSounds (void)
@@ -1556,7 +1558,7 @@ static int S_OpenAL_ChannelState (openal_channel_t *ch)
 {
 	int		state;
 
-	qalGetSourcei(ch->sourceNum, AL_SOURCE_STATE, &state);
+	alGetSourcei(ch->sourceNum, AL_SOURCE_STATE, &state);
 
 	return state;
 }
@@ -1613,7 +1615,6 @@ static void S_OpenAL_IssuePlaySounds (void)
 int	EXPORT CL_PMpointcontents (vec3_t point);
 void S_Update_OpenAL (vec3_t position, const vec3_t velocity, const vec3_t at, const vec3_t up)
 {
-	unsigned			eaxEnv;
 	openal_channel_t	*ch;
 	int					i, total = 0;
 
@@ -1631,26 +1632,27 @@ void S_Update_OpenAL (vec3_t position, const vec3_t velocity, const vec3_t at, c
 	s_openal_listener.orientation[4] = -up[2];
 	s_openal_listener.orientation[5] = -up[0];
 
-	qalListenerfv(AL_POSITION, s_openal_listener.position);
-	//qalListenerfv(AL_VELOCITY, s_openal_listener.velocity);
-	qalListenerfv(AL_ORIENTATION, s_openal_listener.orientation);
+	alListenerfv(AL_POSITION, s_openal_listener.position);
+	//alListenerfv(AL_VELOCITY, s_openal_listener.velocity);
+	alListenerfv(AL_ORIENTATION, s_openal_listener.orientation);
 #ifdef _WIN32
-	qalListenerf(AL_GAIN, (ActiveApp) ? s_volume->value : 0);
+	alListenerf(AL_GAIN, (ActiveApp) ? s_volume->value : 0);
 #else
-	qalListenerf(AL_GAIN, s_volume->value);
+	alListenerf(AL_GAIN, s_volume->value);
 #endif
 
 	// Set state
-	qalDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
-	//qalDistanceModel(AL_INVERSE_DISTANCE);
+	alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
+	//alDistanceModel(AL_INVERSE_DISTANCE);
 
-	//qalDopplerFactor(s_dopplerFactor->value);
-	//qalDopplerVelocity(s_dopplerVelocity->value);
+	//alDopplerFactor(s_dopplerFactor->value);
+	//alDopplerVelocity(s_dopplerVelocity->value);
 
 	// If EAX is enabled, apply listener environmental effects
-#ifdef _WIN32
+#if 0 //def _WIN32
 	if (alConfig.eax)
 	{
+		unsigned eaxEnv;
 		if (cls.state != ca_active)
 		{
 			eaxEnv = EAX_ENVIRONMENT_GENERIC;
@@ -1666,7 +1668,7 @@ void S_Update_OpenAL (vec3_t position, const vec3_t velocity, const vec3_t at, c
 		if (eaxEnv != alConfig.eaxState)
 		{
 			alConfig.eaxState = eaxEnv;
-			qalEAXSet (&DSPROPSETID_EAX20_ListenerProperties, DSPROPERTY_EAXLISTENER_ENVIRONMENT | DSPROPERTY_EAXLISTENER_IMMEDIATE, 0, &eaxEnv, sizeof(eaxEnv));
+			alEAXSet (&DSPROPSETID_EAX20_ListenerProperties, DSPROPERTY_EAXLISTENER_ENVIRONMENT | DSPROPERTY_EAXLISTENER_IMMEDIATE, 0, &eaxEnv, sizeof(eaxEnv));
 		}
 	}
 #endif
@@ -1722,7 +1724,10 @@ void S_Update_OpenAL (vec3_t position, const vec3_t velocity, const vec3_t at, c
 	if (s_show->intvalue)
 		Com_Printf("--- ( %i ) ---\n", LOG_CLIENT, total);
 }
-#endif
+
+
+#endif  // USE_OPENAL
+
 
 /*
 ============
@@ -1756,7 +1761,7 @@ void S_Update(vec3_t origin, vec3_t forward, vec3_t right, vec3_t up)
 		S_Update_OpenAL (origin, vec3_origin, forward, up);
 		return;
 	}
-#endif
+#endif  // USE_OPENAL
 
 	FastVectorCopy (*origin, listener_origin);
 	FastVectorCopy (*forward, listener_forward);

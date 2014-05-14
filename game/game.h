@@ -129,17 +129,10 @@ typedef struct
 {
 	// special messages
 	// it seems gcc 2 doesn't like these at all.
-#if __GNUC__ > 2
 	void	(EXPORT *bprintf) (int printlevel, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 	void	(EXPORT *dprintf) (const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
 	void	(EXPORT *cprintf) (edict_t *ent, int printlevel, const char *fmt, ...) __attribute__ ((format (printf, 3, 4)));
 	void	(EXPORT *centerprintf) (edict_t *ent, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
-#else
-	void	(EXPORT *bprintf) (int printlevel, const char *fmt, ...);
-	void	(EXPORT *dprintf) (const char *fmt, ...);
-	void	(EXPORT *cprintf) (edict_t *ent, int printlevel, const char *fmt, ...);
-	void	(EXPORT *centerprintf) (edict_t *ent, const char *fmt, ...);
-#endif
 
 	void	(EXPORT *sound) (edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs);
 	void	(EXPORT *positioned_sound) (vec3_t origin, edict_t *ent, int channel, int soundinedex, float volume, float attenuation, float timeofs);
@@ -150,11 +143,7 @@ typedef struct
 	// they connect, and changes are sent to all connected clients.
 	void	(EXPORT *configstring) (int num, char *string);
 
-#if __GNUC__ > 2
-	void	(EXPORT *error) (const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
-#else
-	void	(EXPORT *error) (const char *fmt, ...);
-#endif
+	void	(EXPORT *error) (const char *fmt, ...) __attribute__ ((format (printf, 1, 2), noreturn ));
 
 	// the *index functions create configstrings and some internal server state
 	int		(EXPORT *modelindex) (const char *name);
@@ -271,4 +260,4 @@ typedef struct
 	int			max_edicts;
 } game_export_t;
 
-game_export_t * IMPORT GetGameApi (game_import_t *import);
+game_export_t * IMPORT GetGameAPI (game_import_t *import);

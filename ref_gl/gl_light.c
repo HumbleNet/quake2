@@ -56,7 +56,7 @@ void R_RenderDlight (dlight_t *light)
 	qglColor3f (light->color[0]*0.2f, light->color[1]*0.2f, light->color[2]*0.2f);
 	for (i=0 ; i<3 ; i++)
 		v[i] = light->origin[i] - vpn[i]*rad;
-	qglVertex3fv (v);
+	qglVertex3f(v[0], v[1], v[2]);
 	qglColor3f (0,0,0);
 	for (i=16 ; i>=0 ; i--)
 	{
@@ -64,7 +64,7 @@ void R_RenderDlight (dlight_t *light)
 		for (j=0 ; j<3 ; j++)
 			v[j] = light->origin[j] + vright[j]*(float)cos(a)*rad
 				+ vup[j]*(float)sin(a)*rad;
-		qglVertex3fv (v);
+		qglVertex3f(v[0], v[1], v[2]);
 	}
 	qglEnd ();
 }
@@ -79,16 +79,15 @@ void R_RenderDlights (void)
 	int		i;
 	dlight_t	*l;
 
-	if (FLOAT_EQ_ZERO(gl_flashblend->value))
+	if (!gl_flashblend->intvalue)
 		return;
 
 	r_dlightframecount = r_framecount + 1;	// because the count hasn't
 											//  advanced yet for this frame
-	qglDepthMask (0);
+	glDepthMask (0);
 	qglDisable (GL_TEXTURE_2D);
-	qglShadeModel (GL_SMOOTH);
 	qglEnable (GL_BLEND);
-	qglBlendFunc (GL_ONE, GL_ONE);
+	glBlendFunc (GL_ONE, GL_ONE);
 
 	l = r_newrefdef.dlights;
 	for (i=0 ; i<r_newrefdef.num_dlights ; i++, l++)
@@ -97,8 +96,8 @@ void R_RenderDlights (void)
 	qglColor3f (1,1,1);
 	qglDisable (GL_BLEND);
 	qglEnable (GL_TEXTURE_2D);
-	qglBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	qglDepthMask (1);
+	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glDepthMask (1);
 }
 
 
@@ -175,7 +174,7 @@ void R_PushDlights (void)
 	int		i;
 	dlight_t	*l;
 
-	if (FLOAT_NE_ZERO(gl_flashblend->value))
+	if (gl_flashblend->intvalue)
 		return;
 
 	r_dlightframecount = r_framecount + 1;	// because the count hasn't
@@ -341,7 +340,7 @@ void R_LightPoint (vec3_t p, vec3_t color)
 	// add dynamic lights
 	//
 	//light = 0;
-	if (FLOAT_NE_ZERO (gl_dynamic->value))
+	if (gl_dynamic->intvalue)
 	{
 		dl = r_newrefdef.dlights;
 		for (lnum=0 ; lnum<r_newrefdef.num_dlights ; lnum++, dl++)
@@ -358,7 +357,7 @@ void R_LightPoint (vec3_t p, vec3_t color)
 		}
 	}
 
-	if (FLOAT_NE_ZERO(gl_doublelight_entities->value))
+	if (gl_doublelight_entities->intvalue)
 		VectorScale (color, gl_modulate->value, color);
 
 	if (usingmodifiedlightmaps)
@@ -371,7 +370,7 @@ void R_LightPoint (vec3_t p, vec3_t color)
 
 		max = r + g + b;
 		max /= 3;
-		if (FLOAT_EQ_ZERO (gl_coloredlightmaps->value))
+		if (!gl_coloredlightmaps->intvalue)
 		{
 			color[0] = color[1] = color[2] = max;
 		}
@@ -438,13 +437,13 @@ void R_AddDynamicLights (msurface_t *surf)
 		dl = &r_newrefdef.dlights[lnum];
 
 #ifdef INTEGER_DLIGHTS
-		if (FLOAT_NE_ZERO (gl_dlight_falloff->value))
+		if (gl_dlight_falloff->intvalue)
 			frad = Q_ftol(dl->intensity * 1.10f);
 		else
 			frad = Q_ftol(dl->intensity);
 
 #else
-		if (FLOAT_NE_ZERO (gl_dlight_falloff->value))
+		if (gl_dlight_falloff->intvalue)
 			frad = dl->intensity * 1.10f;
 		else
 			frad = dl->intensity;
@@ -508,7 +507,7 @@ void R_AddDynamicLights (msurface_t *surf)
 
 				if ( fdist < fminlight)
 				{
-					if (FLOAT_EQ_ZERO (gl_dlight_falloff->value))
+					if (!gl_dlight_falloff->intvalue)
 					{
 						s_blocklights[i++] += ( frad - fdist ) * dl->color[0];
 						s_blocklights[i++] += ( frad - fdist ) * dl->color[1];
@@ -751,7 +750,7 @@ store:
 					max = (int)(0.289f * colors[0] + 0.587f * colors[1] + 0.114f * colors[2]);
 				else
 					max = (colors[0] + colors[1] + colors[2]) / 3;
-				if (FLOAT_EQ_ZERO (gl_coloredlightmaps->value))
+				if (!gl_coloredlightmaps->intvalue)
 				{
 					dest[0] = dest[1] = dest[2] = max;
 				}

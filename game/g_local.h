@@ -505,17 +505,33 @@ extern	int	meansOfDeath;
 
 extern	edict_t			*g_edicts;
 
-#define	FOFS(x) (int)&(((edict_t *)0)->x)
-#define	STOFS(x) (int)&(((spawn_temp_t *)0)->x)
-#define	LLOFS(x) (int)&(((level_locals_t *)0)->x)
-#define	CLOFS(x) (int)&(((gclient_t *)0)->x)
+#define	FOFS(x)  offsetof(edict_t, x)
+#define	STOFS(x) offsetof(spawn_temp_t, x)
+#define	LLOFS(x) offsetof(level_locals_t, x)
+#define	CLOFS(x) offsetof(gclient_t, x)
 
 #ifdef random
 #undef random
 #endif
 
+
+#ifdef USE_AFL
+
+
+#define random random_afl
+float random_afl();
+float crandom();
+
+
+#else  //  USE_AFL
+
+
 #define random()	((rand () & 0x7fff) / ((float)0x7fff))
 #define crandom()	(2.0f * (random() - 0.5f))
+
+
+#endif  //  USE_AFL
+
 
 extern	cvar_t	*maxentities;
 extern	cvar_t	*deathmatch;
@@ -596,7 +612,7 @@ typedef struct
 } field_t;
 
 
-extern	field_t fields[];
+extern const field_t fields[];
 extern	gitem_t	itemlist[];
 
 
@@ -609,7 +625,7 @@ void Cmd_Score_f (edict_t *ent);
 //
 // g_items.c
 //
-void PrecacheItem (gitem_t *it);
+void PrecacheItem(const gitem_t *it);
 void InitItems (void);
 void SetItemNames (void);
 gitem_t	*FindItem (char *pickup_name);
@@ -623,14 +639,14 @@ void Think_Weapon (edict_t *ent);
 int ArmorIndex (edict_t *ent);
 int PowerArmorType (edict_t *ent);
 gitem_t	*GetItemByIndex (int index);
-qboolean Add_Ammo (edict_t *ent, gitem_t *item, int count);
+qboolean Add_Ammo (edict_t *ent, const gitem_t *item, int count);
 void Touch_Item (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf);
 
 //
 // g_utils.c
 //
 qboolean	KillBox (edict_t *ent);
-void	G_ProjectSource (vec3_t point, vec3_t distance, vec3_t forward, vec3_t right, vec3_t result);
+void	G_ProjectSource (const vec3_t point, const vec3_t distance, const vec3_t forward, const vec3_t right, vec3_t result);
 edict_t *G_Find (edict_t *from, int fieldofs, char *match);
 edict_t *findradius (edict_t *from, vec3_t org, float rad);
 edict_t *G_PickTarget (char *targetname);
@@ -817,6 +833,23 @@ void UpdateChaseCam(edict_t *ent);
 void ChaseNext(edict_t *ent);
 void ChasePrev(edict_t *ent);
 void GetChaseTarget(edict_t *ent);
+
+
+void SpawnEntities (const char *mapname, const char *entities, const char *spawnpoint);
+void ClientThink (edict_t *ent, usercmd_t *cmd);
+qboolean ClientConnect (edict_t *ent, char *userinfo);
+void ClientUserinfoChanged (edict_t *ent, char *userinfo);
+void ClientDisconnect (edict_t *ent);
+void ClientBegin (edict_t *ent);
+void ClientCommand (edict_t *ent);
+void RunEntity (edict_t *ent);
+void WriteGame (const char *filename, qboolean autosave);
+void ReadGame (const char *filename);
+void WriteLevel (const char *filename);
+void ReadLevel (const char *filename);
+void InitGame (void);
+void G_RunFrame (void);
+
 
 //============================================================================
 

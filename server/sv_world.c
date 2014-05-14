@@ -32,7 +32,7 @@ FIXME: this use of "area" is different from the bsp file use
 // (type *)STRUCT_FROM_LINK(link_t *link, type, member)
 // ent = STRUCT_FROM_LINK(link,entity_t,order)
 // FIXME: remove this mess!
-#define	STRUCT_FROM_LINK(l,t,m) ((t *)((byte *)l - (ptrdiff_t)&(((t *)0)->m)))
+#define	STRUCT_FROM_LINK(l,t,m) ((t *)((byte *)l - (ptrdiff_t)offsetof(t, m)))
 
 #define	EDICT_FROM_AREA(l) STRUCT_FROM_LINK(l,edict_t,area)
 
@@ -62,18 +62,18 @@ static int SV_HullForEntity (const edict_t *ent);
 
 
 // ClearLink is used for new headnodes
-__inline void ClearLink (link_t *l)
+static void ClearLink (link_t *l)
 {
 	l->prev = l->next = l;
 }
 
-__inline void RemoveLink (link_t *l)
+static void RemoveLink (link_t *l)
 {
 	l->next->prev = l->prev;
 	l->prev->next = l->next;
 }
 
-__inline void InsertLinkBefore (link_t *l, link_t *before)
+static void InsertLinkBefore (link_t *l, link_t *before)
 {
 	l->next = before;
 	l->prev = before->prev;
@@ -191,7 +191,6 @@ void EXPORT SV_LinkEdict (edict_t *ent)
 	int			leafs[MAX_TOTAL_ENT_LEAFS];
 	int			clusters[MAX_TOTAL_ENT_LEAFS];
 	int			num_leafs;
-	int			i, j, k;
 	int			area;
 	int			topnode;
 	int			edict_number;
@@ -252,7 +251,7 @@ void EXPORT SV_LinkEdict (edict_t *ent)
 		else
 		{
 			// assume that x/y are equal and symetric
-			i = (int)(ent->maxs[0]/8);
+			int i = (int)(ent->maxs[0]/8);
 			if (i<1)
 				i = 1;
 			if (i>31)
@@ -276,7 +275,7 @@ void EXPORT SV_LinkEdict (edict_t *ent)
 			}
 
 			// z is not symetric
-			j = (int)((-ent->mins[2])/8);
+			int j = (int)((-ent->mins[2])/8);
 			if (j<1)
 				j = 1;
 			if (j>31)
@@ -290,7 +289,7 @@ void EXPORT SV_LinkEdict (edict_t *ent)
 			}
 
 			// and z maxs can be negative...
-			k = (int)((ent->maxs[2]+32)/8);
+			int k = (int)((ent->maxs[2]+32)/8);
 			if (k<1)
 				k = 1;
 			if (k>63)
@@ -395,7 +394,7 @@ void EXPORT SV_LinkEdict (edict_t *ent)
 		leafs, MAX_TOTAL_ENT_LEAFS, &topnode);
 
 	// set areas
-	for (i=0 ; i<num_leafs ; i++)
+	for (int i = 0; i < num_leafs; i++)
 	{
 		clusters[i] = CM_LeafCluster (leafs[i]);
 		area = CM_LeafArea (leafs[i]);
@@ -422,10 +421,11 @@ void EXPORT SV_LinkEdict (edict_t *ent)
 	else
 	{
 		ent->num_clusters = 0;
-		for (i=0 ; i<num_leafs ; i++)
+		for (int i = 0; i < num_leafs; i++)
 		{
 			if (clusters[i] == -1)
 				continue;		// not a visible leaf
+            int j;
 			for (j=0 ; j<i ; j++)
 				if (clusters[j] == clusters[i])
 					break;

@@ -18,12 +18,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 
+
+#ifdef _WIN32
+
+
 #define WIN32_LEAN_AND_MEAN
-#include "../qcommon/qcommon.h"
-#include "winquake.h"
+// before qcommon.h or mingw-w64 explodes
+#include <windows.h>
 #include <mmsystem.h>
 #include <direct.h>
 #include <io.h>
+
+#include "../qcommon/qcommon.h"
+#include "winquake.h"
 
 //===============================================================================
 
@@ -402,7 +409,7 @@ ____________________________________________________________________________
 
 //XXX: this breaks on strings that contain high ascii chars! not safe to use for measuring string
 //length to strcpy() into.
-#if !defined _M_AMD64
+#if defined _MSC_VER && !defined _M_AMD64
 size_t __cdecl fast_strlen(const char *s)
 {
     __asm
@@ -420,7 +427,7 @@ size_t __cdecl fast_strlen(const char *s)
 			jz	short ret0
 			cmp	byte ptr [eax+1], cl	;string of length 1
 			jz	short ret1
-			cmp	byte ptr [eax+2], cl	;if 3rd char isn't zero, adjust?
+			cmp	byte ptr [eax+2], cl	;if 3rd char isnt zero, adjust?
 			jnz	short adjust
 			inc	eax						;3rd char is zero, so inc counter
 
@@ -522,5 +529,6 @@ int __cdecl fast_tolower(int c)
 	}
 }
 #endif
-//============================================
 
+
+#endif  // _WIN32

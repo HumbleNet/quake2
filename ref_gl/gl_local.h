@@ -19,24 +19,80 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN 1
 #  include <windows.h>
-#endif
 
-#include <stdio.h>
+#ifndef _MSC_VER
+// on mingw we must include this before gl_rmain.c include SDL.h
+// or it blows up for some reason
+#include <intrin.h>
+#endif  // _MSC_VER
+
+#endif  // _WIN32
+
+#ifdef USE_GLEW
+
+#include <GL/glew.h>
+
+#else  // USE_GLEW
+
+
+#define GL_GLEXT_PROTOTYPES 1
 
 #include <GL/gl.h>
-#include <GL/glu.h>
-#include <math.h>
+#include <GL/glext.h>
+#include <stdbool.h>
 
-#ifndef __linux__
-#ifndef GL_COLOR_INDEX8_EXT
-#define GL_COLOR_INDEX8_EXT GL_COLOR_INDEX
-#endif
-#endif
+
+static const bool GLEW_GREMEDY_string_marker = false;
+
+
+#endif  // USE_GLEW
+
+#include <stdio.h>
+#include <math.h>
 
 #include "../client/ref.h"
 
-#include "qgl.h"
+
+void     QGL_Shutdown( void );
+
+#ifndef APIENTRY
+#  define APIENTRY
+#endif
+
+//extern  void ( APIENTRY * qglAccum )(GLenum op, GLfloat value);
+void qglAlphaFunc(GLenum func, GLclampf ref);
+void qglBegin(GLenum mode);
+void qglBindTexture(GLenum target, GLuint texture);
+void qglColor3f(GLfloat red, GLfloat green, GLfloat blue);
+void qglColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
+void qglDepthRange(GLclampd zNear, GLclampd zFar);
+void qglDisable(GLenum cap);
+void qglEnable(GLenum cap);
+void qglEnd(void);
+void qglFrustum(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar);
+void qglGetFloatv(GLenum pname, GLfloat *params);
+void qglLoadIdentity(void);
+void qglLoadMatrixf(const GLfloat *m);
+void qglMatrixMode(GLenum mode);
+void qglMultMatrixf(const GLfloat *m);
+void qglMTexCoord2f(GLenum tex, GLfloat s, GLfloat t);
+void qglOrtho(GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble zNear, GLdouble zFar);
+void qglPopMatrix(void);
+void qglPushMatrix(void);
+void qglRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
+void qglScalef(GLfloat x, GLfloat y, GLfloat z);
+void qglTexEnvi(GLenum target, GLenum pname, GLint param);
+void qglTranslatef(GLfloat x, GLfloat y, GLfloat z);
+void qglVertex2f(GLfloat x, GLfloat y);
+void qglVertex3f(GLfloat x, GLfloat y, GLfloat z);
+
+void qglActiveTexture(GLenum);
+
+
+void flushDraws(const char *reason);
+
 
 //please keep this undefined on modified versions.
 #define R1GL_RELEASE 1
@@ -58,18 +114,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // fall over
 #define	ROLL	2
 
-
-#ifndef __VIDDEF_T
-#define __VIDDEF_T
-typedef struct
-{
-	unsigned		width, height;			// coordinates from main game
-} viddef_t;
-#endif
-
 typedef float vec4_t[4];
-
-extern	viddef_t	vid;
 
 /*
 
@@ -102,7 +147,7 @@ typedef struct image_s
 	int		upload_width, upload_height;	// after power of two and picmip
 	int		registration_sequence;		// 0 = free
 	struct msurface_s	*texturechain;	// for sort-by-texture world drawing
-	unsigned long		texnum;						// gl texture binding
+	GLuint texnum;						// gl texture binding
 	//int		detailtexnum;
 	float	sl, tl, sh, th;				// 0,0 - 1,1 unless part of the scrap
 	//qboolean	scrap;
@@ -113,9 +158,11 @@ typedef struct image_s
 
 #define	TEXNUM_LIGHTMAPS	1024
 #define	TEXNUM_SCRAPS		1152
-#define	TEXNUM_IMAGES		1153
 //#define TEXNUM_DETAIL		5555
 #define		MAX_GLTEXTURES	1024
+
+#define	MAX_LIGHTMAPS	128
+
 
 //extern	cvar_t	*con_alpha;
 
@@ -154,6 +201,112 @@ typedef struct
 	float	s, t;
 	float	r, g, b;
 } glvert_t;
+
+
+typedef struct Vertex {
+	float pos[3];
+	uint32_t color;
+	float tex0[2];
+	float tex1[2];
+} Vertex;
+
+
+#define NUMMATRICES 32
+
+
+typedef struct ShaderTexState {
+	bool texEnable;
+	GLenum texMode;
+} ShaderTexState;
+
+
+typedef struct ShaderState {
+	bool alphaTest;
+	GLenum alphaFunc;
+	float alphaRef;
+
+	ShaderTexState texState[2];
+} ShaderState;
+
+
+struct Shader;
+
+typedef struct Shader {
+	ShaderState key;
+	GLuint program;
+
+	GLint mvpUniform;
+	GLint alphaRefUniform;
+
+	struct Shader *next;
+} Shader;
+
+
+typedef struct PipelineState {
+	bool blend;
+	// TODO: blend func
+	// TODO: depth test, depth write
+	// TODO: cull
+	// TODO: scissor
+	// TODO: stencil
+} PipelineState;
+
+
+typedef struct DrawCall {
+	GLenum primitive;
+	unsigned int firstVert;
+	unsigned int numVertices;
+} DrawCall;
+
+
+#define NUMVBOS 256
+
+
+typedef struct QGLState {
+	PipelineState wantPipeline;
+	PipelineState activePipeline;
+	bool pipelineDirty;
+
+	Vertex *vertices;
+	unsigned int numVertices;
+	unsigned int usedVertices;
+
+	GLenum primitive;
+
+	Vertex currentVertex;
+
+	unsigned int clientActiveTexture;
+	unsigned int wantActiveTexture, activeTexture;
+
+	GLenum matrixMode;
+
+	int mvMatrixTop, projMatrixTop;
+	bool mvMatrixDirty, projMatrixDirty;
+
+	float zNear, zFar;
+
+	// this is index into the array, not a VBO id
+	unsigned int currentVBOidx;
+
+	bool shaderDirty;
+	ShaderState wantShader;
+	Shader *activeShader;
+
+	Shader *shaders;
+
+	DrawCall *drawCalls;
+	unsigned int numDrawCalls, maxDrawCalls;
+
+	unsigned int currentDrawFirstVertex;
+
+	float mvMatrices[NUMMATRICES][16];
+	float projMatrices[NUMMATRICES][16];
+
+	GLuint vbos[NUMVBOS];
+} QGLState;
+
+
+extern QGLState *qglState;
 
 
 #define	MAX_LBM_HEIGHT		480
@@ -207,10 +360,7 @@ extern	cvar_t	*r_lerpmodels;
 
 extern	cvar_t	*r_lightlevel;	// FIXME: This is a HACK to get the client's light level
 
-extern cvar_t	*gl_vertex_arrays;
-
 //extern cvar_t	*gl_ext_swapinterval;
-//extern cvar_t	*gl_ext_palettedtexture;
 extern cvar_t	*gl_ext_multitexture;
 extern cvar_t	*gl_ext_pointparameters;
 //extern cvar_t	*gl_ext_compiled_vertex_array;
@@ -221,7 +371,6 @@ extern cvar_t	*gl_ext_point_sprite;
 extern cvar_t	*gl_ext_texture_filter_anisotropic;
 extern cvar_t	*gl_ext_texture_non_power_of_two;
 extern cvar_t	*gl_ext_max_anisotropy;
-extern cvar_t	*gl_ext_nv_multisample_filter_hint;
 extern cvar_t	*gl_ext_occlusion_query;
 
 extern cvar_t	*gl_colorbits;
@@ -238,12 +387,8 @@ extern cvar_t	*gl_noscrap;
 extern cvar_t	*gl_zfar;
 extern cvar_t	*gl_overbrights;
 extern cvar_t	*gl_linear_mipmaps;
-extern cvar_t	*gl_hudscale;
 
 extern cvar_t	*vid_gamma_pics;
-
-extern cvar_t	*gl_forcewidth;
-extern cvar_t	*gl_forceheight;
 
 extern cvar_t	*vid_topmost;
 
@@ -256,8 +401,6 @@ extern cvar_t	*gl_particle_att_c;
 
 //extern	cvar_t	*gl_nosubimage;
 extern	cvar_t	*gl_bitdepth;
-extern	cvar_t	*gl_mode;
-//extern	cvar_t	*gl_log;
 //extern	cvar_t	*gl_lightmap;
 extern	cvar_t	*gl_shadows;
 extern	cvar_t	*gl_dynamic;
@@ -268,7 +411,6 @@ extern	cvar_t	*gl_picmip;
 extern	cvar_t	*gl_skymip;
 extern	cvar_t	*gl_showtris;
 extern	cvar_t	*gl_finish;
-extern	cvar_t	*gl_ztrick;
 extern	cvar_t	*gl_clear;
 extern	cvar_t	*gl_cull;
 //extern	cvar_t	*gl_poly;
@@ -280,11 +422,8 @@ extern	cvar_t	*gl_modulate;
 //extern	cvar_t	*gl_playermip;
 extern	cvar_t	*gl_drawbuffer;
 //extern	cvar_t	*gl_3dlabs_broken;
-extern  cvar_t  *gl_driver;
 extern	cvar_t	*gl_swapinterval;
 extern	cvar_t	*gl_texturemode;
-extern	cvar_t	*gl_texturealphamode;
-extern	cvar_t	*gl_texturesolidmode;
 //extern  cvar_t  *gl_saturatelighting;
 extern  cvar_t  *gl_lockpvs;
 
@@ -298,15 +437,12 @@ extern	cvar_t	*intensity;
 
 extern	cvar_t	*gl_dlight_falloff;
 extern	cvar_t	*gl_alphaskins;
-extern	cvar_t	*gl_defertext;
 
 extern	cvar_t	*gl_pic_scale;
 
 extern	cvar_t	*vid_restore_on_switch;
 
 extern int		usingmodifiedlightmaps;
-
-extern	int		defer_drawing;
 
 extern	const int		gl_solid_format;
 extern	const int		gl_alpha_format;
@@ -322,14 +458,14 @@ extern	int		c_visible_textures;
 extern	float	r_world_matrix[16];
 
 void R_TranslatePlayerSkin (int playernum);
-void GL_Bind (unsigned int texnum);
 void GL_MBind( GLenum target, unsigned int texnum );
-void GL_TexEnv( GLenum value );
+void GL_TexEnv( GLenum target, GLenum value );
 void GL_EnableMultitexture( qboolean enable );
 void GL_SelectTexture( GLenum );
 
 void R_LightPoint (vec3_t p, vec3_t color);
 void R_PushDlights (void);
+void clearImageHash(void);
 unsigned int hashify (const char *S);
 //====================================================================
 
@@ -342,9 +478,6 @@ extern	int		registration_sequence;
 
 
 void V_AddBlend (float r, float g, float b, float a, float *v_blend);
-
-int 	EXPORT R_Init( void *hinstance, void *hWnd );
-void	EXPORT R_Shutdown( void );
 
 void R_RenderView (refdef_t *fd);
 void GL_ScreenShot_f (void);
@@ -382,29 +515,25 @@ char	*va(char *format, ...);
 
 //void COM_StripExtension (char *in, char *out);
 
-void	EXPORT Draw_GetPicSize (int *w, int *h, char *name);
-void	EXPORT Draw_Pic (int x, int y, char *name);
-void	EXPORT Draw_StretchPic (int x, int y, int w, int h, char *name);
-void	EXPORT Draw_Char (int x, int y, int c);
-void	EXPORT Draw_TileClear (int x, int y, int w, int h, char *name);
-void	EXPORT Draw_Fill (int x, int y, int w, int h, int c);
-void	EXPORT Draw_FadeScreen (void);
-void	EXPORT Draw_StretchRaw (int x, int y, int w, int h, int cols, int rows, byte *data);
-
-void	EXPORT R_BeginFrame( float camera_separation );
-void	EXPORT R_SetPalette ( const unsigned char *palette);
+void	Draw_GetPicSize (int *w, int *h, char *name);
+void	Draw_Pic (int x, int y, char *name);
+void	Draw_StretchPic (int x, int y, int w, int h, char *name);
+void	Draw_TileClear (int x, int y, int w, int h, char *name);
+void	Draw_Fill (int x, int y, int w, int h, int c);
+void	Draw_FadeScreen (void);
+void	Draw_StretchRaw (int x, int y, int w, int h, int cols, int rows, byte *data);
 
 int		Draw_GetPalette (void);
 
 void GL_ResampleTexture (unsigned *in, int inwidth, int inheight, unsigned *out,  int outwidth, int outheight);
 
-struct image_s * EXPORT R_RegisterSkin (char *name);
+struct image_s * R_RegisterSkin (char *name);
 
 void LoadPCX (const char *filename, byte **pic, byte **palette, int *width, int *height);
 image_t *GL_LoadPic (const char *name, byte *pic, int width, int height, imagetype_t type, int bits);
 image_t	*GL_FindImage (const char *name, const char *basename, imagetype_t type);
 image_t	*GL_FindImageBase (const char *basename, imagetype_t type);
-void	GL_TextureMode( char *string );
+void	GL_TextureMode(const char *string);
 void	GL_ImageList_f (void);
 void	GL_Version_f (void);
 
@@ -415,8 +544,6 @@ void	GL_ShutdownImages (void);
 
 void	GL_FreeUnusedImages (void);
 
-void GL_TextureAlphaMode( char *string );
-void GL_TextureSolidMode( char *string );
 
 /*
 ** GL extension emulation functions
@@ -428,85 +555,20 @@ void EmptyImageCache (void);
 /*
 ** GL config stuff
 */
-#define GL_RENDERER_VOODOO		0x00000001
-#define GL_RENDERER_VOODOO2   	0x00000002
-#define GL_RENDERER_VOODOO_RUSH	0x00000004
-#define GL_RENDERER_BANSHEE		0x00000008
-#define		GL_RENDERER_3DFX		0x0000000F
-
-#define GL_RENDERER_PCX1		0x00000010
-#define GL_RENDERER_PCX2		0x00000020
-#define GL_RENDERER_PMX			0x00000040
-#define		GL_RENDERER_POWERVR		0x00000070
-
-#define GL_RENDERER_PERMEDIA2	0x00000100
-#define GL_RENDERER_GLINT_MX	0x00000200
-#define GL_RENDERER_GLINT_TX	0x00000400
-#define GL_RENDERER_3DLABS_MISC	0x00000800
-#define		GL_RENDERER_3DLABS	0x00000F00
-
-#define GL_RENDERER_REALIZM		0x00001000
-#define GL_RENDERER_REALIZM2	0x00002000
-#define		GL_RENDERER_INTERGRAPH	0x00003000
-
-#define GL_RENDERER_3DPRO		0x00004000
-#define GL_RENDERER_REAL3D		0x00008000
-#define GL_RENDERER_RIVA128		0x00010000
-#define GL_RENDERER_DYPIC		0x00020000
-
-#define GL_RENDERER_V1000		0x00040000
-#define GL_RENDERER_V2100		0x00080000
-#define GL_RENDERER_V2200		0x00100000
-#define		GL_RENDERER_RENDITION	0x001C0000
-
-#define GL_RENDERER_O2          0x00100000
-#define GL_RENDERER_IMPACT      0x00200000
-#define GL_RENDERER_RE			0x00400000
-#define GL_RENDERER_IR			0x00800000
-#define		GL_RENDERER_SGI			0x00F00000
-
-#define GL_RENDERER_MCD			0x01000000
-#define GL_RENDERER_ATI			0x02000000
-#define GL_RENDERER_NV			0x04000000
-
-#define GL_RENDERER_OTHER		0x80000000
-
-//r1ch: my super leet gl extensions!
-#define GL_GENERATE_MIPMAP_SGIS			0x8191
-#define	GL_GENERATE_MIPMAP_HINT_SGIS	0x8192
-#define GL_TEXTURE_MAX_ANISOTROPY_EXT   0x84FE
-
-#define GL_MULTISAMPLE_ARB                0x809D
-#define GL_SAMPLE_ALPHA_TO_COVERAGE_ARB   0x809E
-#define GL_SAMPLE_ALPHA_TO_ONE_ARB        0x809F
-#define GL_SAMPLE_COVERAGE_ARB            0x80A0
-#define GL_SAMPLE_BUFFERS_ARB             0x80A8
-#define GL_SAMPLES_ARB                    0x80A9
-#define GL_SAMPLE_COVERAGE_VALUE_ARB      0x80AA
-#define GL_SAMPLE_COVERAGE_INVERT_ARB     0x80AB
-#define GL_MULTISAMPLE_BIT_ARB            0x20000000
-
-/* NV_multisample_filter_hint */
-#define GL_MULTISAMPLE_FILTER_HINT_NV     0x8534
 
 typedef struct
 {
-	int         renderer;
 	const char *renderer_string;
 	const char *vendor_string;
 	const char *version_string;
 	const char *extensions_string;
 
 	//qboolean	r1gl_GL_SGIS_generate_mipmap;
-	qboolean	r1gl_GL_ARB_point_sprite;
 	qboolean	r1gl_GL_EXT_texture_filter_anisotropic;
-	qboolean	r1gl_GL_EXT_nv_multisample_filter_hint;
 	qboolean	r1gl_GL_ARB_texture_non_power_of_two;
 	qboolean	wglPFD;
 
 	int			bitDepth;
-	int			r1gl_QueryBits;
-	unsigned int r1gl_Queries[MAX_ENTITIES];
 } glconfig_t;
 
 typedef struct
@@ -514,20 +576,13 @@ typedef struct
 	float inverse_intensity;
 	qboolean fullscreen;
 
-	int     prev_mode;
-
 	unsigned char *d_16to8table;
 
-	int lightmap_textures;
+	GLuint lightmap_textures[MAX_LIGHTMAPS];
 
 	unsigned	currenttextures[2];
 	unsigned int currenttmu;
 	GLenum currenttarget;
-
-#ifdef STEREO_SUPPORT
-	float camera_separation;
-	qboolean stereo_enabled;
-#endif
 
 	unsigned char originalRedGammaTable[256];
 	unsigned char originalGreenGammaTable[256];
@@ -535,6 +590,8 @@ typedef struct
 
 	qboolean hwgamma;
 } glstate_t;
+
+extern double vid_scaled_width, vid_scaled_height;
 
 extern glconfig_t  gl_config;
 extern glstate_t   gl_state;
@@ -548,7 +605,6 @@ IMPORTED FUNCTIONS
 */
 
 extern	refimport_t		ri;
-extern	refimportnew_t	rx;
 
 /*
 ====================================================================
@@ -558,18 +614,7 @@ IMPLEMENTATION SPECIFIC FUNCTIONS
 ====================================================================
 */
 
-#ifdef STEREO_SUPPORT
-void		GLimp_BeginFrame( float camera_separation );
-#else
-void		GLimp_BeginFrame( void );
-#endif
-void	EXPORT	GLimp_EndFrame( void );
-int 		GLimp_Init( void *hinstance, void *hWnd );
 void		GLimp_Shutdown( void );
-int    	GLimp_SetMode( unsigned int *pwidth, unsigned int *pheight, int mode, qboolean fullscreen );
-void	EXPORT	GLimp_AppActivate( qboolean active );
 void		GLimp_EnableLogging( qboolean enable );
 void		GLimp_LogNewFrame( void );
 
-
-void GL_CheckForError (void);

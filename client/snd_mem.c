@@ -105,7 +105,9 @@ void ResampleSfx (sfx_t *sfx, int inrate, int inwidth, byte *data)
 
 //=============================================================================
 
+
 #ifdef USE_OPENAL
+
 
 static void S_OpenAL_UploadSound (byte *data, int width, int channels, sfx_t *sfx)
 {
@@ -131,8 +133,8 @@ static void S_OpenAL_UploadSound (byte *data, int width, int channels, sfx_t *sf
 	}
 
 	// Upload the sound
-	qalGenBuffers(1, &sfx->bufferNum);
-	qalBufferData(sfx->bufferNum, sfx->format, data, size, sfx->rate);
+	alGenBuffers(1, &sfx->bufferNum);
+	alBufferData(sfx->bufferNum, sfx->format, data, size, sfx->rate);
 }
 
 static qboolean S_OpenAL_LoadWAV (const char *name, byte **wav, wavInfo_t *info);
@@ -174,7 +176,9 @@ qboolean S_OpenAL_LoadSound (sfx_t *sfx)
 	return true;
 }
 
-#endif
+
+#endif  // USE_OPENAL
+
 
 /*
 ==============
@@ -245,7 +249,7 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 		}
 
 		len = len * info.width * info.channels;
-		sc = s->cache = Z_TagMalloc (len + sizeof(sfxcache_t), TAGMALLOC_CLIENT_SOUNDCACHE);
+		sc = s->cache = (sfxcache_t *) Z_TagMalloc (len + sizeof(sfxcache_t), TAGMALLOC_CLIENT_SOUNDCACHE);
 	}
 	//else
 	//{
@@ -368,7 +372,10 @@ void DumpChunks(void)
 	} while (data_p < iff_end);
 }
 
+
 #ifdef USE_OPENAL
+
+
 static qboolean S_OpenAL_LoadWAV (const char *name, byte **wav, wavInfo_t *info)
 {
 	byte	*buffer, *out;
@@ -450,14 +457,17 @@ static qboolean S_OpenAL_LoadWAV (const char *name, byte **wav, wavInfo_t *info)
 	}
 
 	// Load the data
-	*wav = out = Z_TagMalloc(info->samples * info->width, TAGMALLOC_CLIENT_SOUNDCACHE);
+	*wav = out = (byte *) Z_TagMalloc(info->samples * info->width, TAGMALLOC_CLIENT_SOUNDCACHE);
 	memcpy(out, buffer + (data_p - buffer), info->samples * info->width);
 
 	FS_FreeFile(buffer);
 
 	return true;
 }
-#endif
+
+
+#endif  // USE_OPENAL
+
 
 /*
 ============

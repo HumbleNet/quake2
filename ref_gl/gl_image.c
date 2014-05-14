@@ -19,8 +19,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "gl_local.h"
+
+
+#ifdef USE_PNG
 #include <png.h>
+#endif  // USE_PNG
+
+
+#ifdef USE_JPEG
 #include <jpeglib.h>
+#endif  // USE_JPEG
+
 
 image_t		gltextures[MAX_GLTEXTURES];
 int			numgltextures = 0;
@@ -43,11 +52,11 @@ qboolean GL_Upload32 (unsigned *data, int width, int height,  qboolean mipmap, i
 
 const char	*current_texture_filename;
 
-const int		gl_solid_format = 3;
-const int		gl_alpha_format = 4;
+const int		gl_solid_format = GL_RGB;
+const int		gl_alpha_format = GL_RGBA;
 
-int		gl_tex_solid_format = 3;
-int		gl_tex_alpha_format = 4;
+int		gl_tex_solid_format = GL_RGB;
+int		gl_tex_alpha_format = GL_RGBA;
 
 //int		gl_filter_min = GL_LINEAR_MIPMAP_NEAREST;
 
@@ -98,55 +107,22 @@ void EmptyImageCache (void)
 
 #endif
 
-/*void GL_SetTexturePalette( unsigned palette[256] )
-{
-	int i;
-	unsigned char temptable[768];
-
-	if ( qglColorTableEXT && gl_ext_palettedtexture->value )
-	{
-		for ( i = 0; i < 256; i++ )
-		{
-			temptable[i*3+0] = ( palette[i] >> 0 ) & 0xff;
-			temptable[i*3+1] = ( palette[i] >> 8 ) & 0xff;
-			temptable[i*3+2] = ( palette[i] >> 16 ) & 0xff;
-		}
-
-		qglColorTableEXT( GL_SHARED_TEXTURE_PALETTE_EXT,
-						   GL_RGB,
-						   256,
-						   GL_RGB,
-						   GL_UNSIGNED_BYTE,
-						   temptable );
-	}
-}*/
 
 void GL_EnableMultitexture( qboolean enable )
 {
-	if ( !qglSelectTextureSGIS && !qglActiveTextureARB )
-		return;
-
-	GL_SelectTexture( GL_TEXTURE1 );
+	GL_TexEnv(GL_TEXTURE1, GL_REPLACE);
 
 	if ( enable )
 		qglEnable( GL_TEXTURE_2D );
 	else
 		qglDisable( GL_TEXTURE_2D );	
 
-	GL_CheckForError ();
-
-	GL_TexEnv( GL_REPLACE );
-
-	GL_SelectTexture( GL_TEXTURE0 );
-	GL_TexEnv( GL_REPLACE );
+	GL_TexEnv(GL_TEXTURE0, GL_REPLACE);
 }
 
 void GL_SelectTexture( GLenum texture )
 {
 	unsigned tmu;
-
-	if (!qglSelectTextureSGIS && !qglActiveTextureARB)
-		return;
 
 	if ( texture == GL_TEXTURE0 )
 	{
@@ -160,39 +136,30 @@ void GL_SelectTexture( GLenum texture )
 	gl_state.currenttmu = tmu;
 	gl_state.currenttarget = texture;
 
-	if ( qglSelectTextureSGIS )
-	{
-		qglSelectTextureSGIS( texture );
-		GL_CheckForError ();
-	}
-	else if ( qglActiveTextureARB )
-	{
-		qglActiveTextureARB( texture );
-		GL_CheckForError ();
-
-		qglClientActiveTextureARB( texture );
-		GL_CheckForError ();
-	}
+	qglActiveTexture(texture);
 }
 
-void GL_TexEnv( GLenum mode )
+void GL_TexEnv(GLenum target, GLenum mode)
 {
+	if (gl_state.currenttarget != target) {
+		GL_SelectTexture(target);
+	}
+
 	static GLenum lastmodes[2] = { 0xFFFFFFFF, 0xFFFFFFFF };
 
 	if ( mode != lastmodes[gl_state.currenttmu] )
 	{
 		qglTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, mode );
 		lastmodes[gl_state.currenttmu] = mode;
-		GL_CheckForError ();
 	}
 }
 
-void GL_Bind (unsigned int texnum)
+static void GL_Bind (unsigned int texnum)
 {
 #ifdef _DEBUG
 	extern	image_t	*draw_chars;
 
-	if (FLOAT_NE_ZERO(gl_nobind->value))
+	if (gl_nobind->intvalue)
 	{
 		if (gl_nobind->value == 2)
 		{
@@ -211,7 +178,6 @@ void GL_Bind (unsigned int texnum)
 	gl_state.currenttextures[gl_state.currenttmu] = texnum;
 
 	qglBindTexture (GL_TEXTURE_2D, texnum);
-	GL_CheckForError ();
 }
 
 void GL_MBind( GLenum target, unsigned int texnum )
@@ -231,16 +197,15 @@ void GL_MBind( GLenum target, unsigned int texnum )
 	}
 
 	GL_Bind( texnum );
-	GL_CheckForError ();
 }
 
 typedef struct
 {
-	char *name;
+	const char *name;
 	int	minimize, maximize;
 } glmode_t;
 
-glmode_t modes[] =
+const glmode_t modes[] =
 {
 	{"GL_NEAREST",					GL_NEAREST,					GL_NEAREST},
 	{"GL_LINEAR",					GL_LINEAR,					GL_LINEAR},
@@ -256,23 +221,13 @@ glmode_t modes[] =
 
 typedef struct
 {
-	char *name;
+	const char *name;
 	int mode;
 } gltmode_t;
 
-gltmode_t gl_alpha_modes[] = {
-	{"default", 4},
-	{"GL_RGBA", GL_RGBA},
-	{"GL_RGBA8", GL_RGBA8},
-	{"GL_RGB5_A1", GL_RGB5_A1},
-	{"GL_RGBA4", GL_RGBA4},
-	{"GL_RGBA2", GL_RGBA2},
-};
 
-#define NUM_GL_ALPHA_MODES (sizeof(gl_alpha_modes) / sizeof (gltmode_t))
-
-gltmode_t gl_solid_modes[] = {
-	{"default", 3},
+const gltmode_t gl_solid_modes[] = {
+	{"default", GL_RGB},
 	{"GL_RGB", GL_RGB},
 	{"GL_RGB8", GL_RGB8},
 	{"GL_RGB5", GL_RGB5},
@@ -290,7 +245,7 @@ gltmode_t gl_solid_modes[] = {
 GL_TextureMode
 ===============
 */
-void GL_TextureMode( char *string )
+void GL_TextureMode(const char *string)
 {
 	int		i;
 	image_t	*glt;
@@ -303,7 +258,7 @@ void GL_TextureMode( char *string )
 
 	if (i == NUM_GL_MODES)
 	{
-		ri.Con_Printf (PRINT_ALL, "bad filter name\n");
+		VID_Printf (PRINT_ALL, "bad filter name\n");
 		return;
 	}
 
@@ -316,61 +271,11 @@ void GL_TextureMode( char *string )
 		if (glt->type != it_pic && glt->type != it_sky )
 		{
 			GL_Bind (glt->texnum);
-			qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-			GL_CheckForError ();
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
 
-			qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
-			GL_CheckForError ();
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
 		}
 	}
-}
-
-/*
-===============
-GL_TextureAlphaMode
-===============
-*/
-void GL_TextureAlphaMode( char *string )
-{
-	int		i;
-
-	for (i=0 ; i< NUM_GL_ALPHA_MODES ; i++)
-	{
-		if ( !Q_stricmp( gl_alpha_modes[i].name, string ) )
-			break;
-	}
-
-	if (i == NUM_GL_ALPHA_MODES)
-	{
-		ri.Con_Printf (PRINT_ALL, "bad alpha texture mode name\n");
-		return;
-	}
-
-	gl_tex_alpha_format = gl_alpha_modes[i].mode;
-}
-
-/*
-===============
-GL_TextureSolidMode
-===============
-*/
-void GL_TextureSolidMode( char *string )
-{
-	int		i;
-
-	for (i=0 ; i< NUM_GL_SOLID_MODES ; i++)
-	{
-		if ( !Q_stricmp( gl_solid_modes[i].name, string ) )
-			break;
-	}
-
-	if (i == NUM_GL_SOLID_MODES)
-	{
-		ri.Con_Printf (PRINT_ALL, "bad solid texture mode name\n");
-		return;
-	}
-
-	gl_tex_solid_format = gl_solid_modes[i].mode;
 }
 
 
@@ -455,40 +360,22 @@ PCX LOADING
 
 qboolean GetPCXInfo (const char *filename, int *width, int *height)
 {
-	if (rx.FS_FOpenFile)
-	{
 		pcx_t		pcx;
 		FILE		*fh;
 		qboolean	closeFile;
 
-		rx.FS_FOpenFile (filename, &fh, HANDLE_OPEN, &closeFile);
+		FS_FOpenFile (filename, &fh, HANDLE_OPEN, &closeFile);
 		if (!fh)
 			return false;
 
-		rx.FS_Read (&pcx, sizeof(pcx), fh);
+		FS_Read (&pcx, sizeof(pcx), fh);
 
 		*width = pcx.xmax + 1;
 		*height = pcx.ymax + 1;
 
 		if (closeFile)
-			rx.FS_FCloseFile (fh);
-	}
-	else
-	{
-		pcx_t	*pcx;
-		byte	*raw;
+			FS_FCloseFile (fh);
 
-		ri.FS_LoadFile (filename, (void **)&raw);
-		if (!raw)
-			return false;
-
-		pcx = (pcx_t *)raw;
-
-		*width = pcx->xmax + 1;
-		*height = pcx->ymax + 1;
-
-		ri.FS_FreeFile (raw);
-	}
 	return true;
 }
 
@@ -516,7 +403,7 @@ void LoadPCX (const char *filename, byte **pic, byte **palette, int *width, int 
 	len = ri.FS_LoadFile (filename, (void **)&raw);
 	if (!raw || len < sizeof(pcx_t))
 	{
-		ri.Con_Printf (PRINT_DEVELOPER, "Bad/missing PCX file: %s\n", filename);
+		Com_DPrintf("Bad/missing PCX file: %s\n", filename);
 		return;
 	}
 
@@ -545,17 +432,17 @@ void LoadPCX (const char *filename, byte **pic, byte **palette, int *width, int 
 		|| pcx->ymax >= 480
 		|| pcx->data >= len)
 	{
-		ri.Con_Printf (PRINT_ALL, "Bad PCX file: %s\n", filename);
+		VID_Printf (PRINT_ALL, "Bad PCX file: %s\n", filename);
 		ri.FS_FreeFile (pcx);
 		return;
 	}
 
 	picSize = (pcx->ymax+1) * (pcx->xmax+1);
 
-	out = malloc ( picSize );
+	out = (byte *) malloc ( picSize );
 	if (!out)
 	{
-		ri.Con_Printf (PRINT_ALL, "Not enough memory for PCX data: %s (%d bytes)\n", filename, picSize);
+		VID_Printf (PRINT_ALL, "Not enough memory for PCX data: %s (%d bytes)\n", filename, picSize);
 		goto abortload;
 	}
 
@@ -567,14 +454,14 @@ void LoadPCX (const char *filename, byte **pic, byte **palette, int *width, int 
 	{
 		if (len < 768)
 		{
-			ri.Con_Printf (PRINT_ALL, "Bad PCX file (not enough data for palette): %s\n", filename);
+			VID_Printf (PRINT_ALL, "Bad PCX file (not enough data for palette): %s\n", filename);
 			goto abortload;
 		}
 
-		*palette = malloc(768);
+		*palette = (byte *) malloc(768);
 		if (!*palette)
 		{
-			ri.Con_Printf (PRINT_ALL, "Not enough memory for PCX palette: %s\n", filename);
+			VID_Printf (PRINT_ALL, "Not enough memory for PCX palette: %s\n", filename);
 			goto abortload;
 		}
 
@@ -596,7 +483,7 @@ void LoadPCX (const char *filename, byte **pic, byte **palette, int *width, int 
 		{
 			if (raw - base >= len)
 			{
-				ri.Con_Printf (PRINT_ALL, "Malformed PCX file (not enough data): %s\n", filename);
+				VID_Printf (PRINT_ALL, "Malformed PCX file (not enough data): %s\n", filename);
 				goto abortload;
 			}
 
@@ -607,7 +494,7 @@ void LoadPCX (const char *filename, byte **pic, byte **palette, int *width, int 
 				runLength = dataByte & 0x3F;
 				if (raw - base >= len)
 				{
-					ri.Con_Printf (PRINT_ALL, "Malformed PCX file (not enough data): %s\n", filename);
+					VID_Printf (PRINT_ALL, "Malformed PCX file (not enough data): %s\n", filename);
 					goto abortload;
 				}
 				dataByte = *raw++;
@@ -619,7 +506,7 @@ void LoadPCX (const char *filename, byte **pic, byte **palette, int *width, int 
 			{
 				if (x >= pcx->xmax + 1)
 				{
-					ri.Con_Printf (PRINT_ALL, "Malformed PCX file (bad runlength encoding): %s\n", filename);
+					VID_Printf (PRINT_ALL, "Malformed PCX file (bad runlength encoding): %s\n", filename);
 					goto abortload;
 				}
 				pix[x++] = dataByte;
@@ -629,7 +516,7 @@ void LoadPCX (const char *filename, byte **pic, byte **palette, int *width, int 
 
 	//end of data should coincide with start of palette
 	if (raw - base != len - 769)
-		ri.Con_Printf (PRINT_DEVELOPER, "Empty space in PCX file: %s\n", filename);
+		Com_DPrintf("Empty space in PCX file: %s\n", filename);
 
 	ri.FS_FreeFile (pcx);
 	return;
@@ -651,12 +538,16 @@ abortload:
 	ri.FS_FreeFile (pcx);
 }
 
+
+#ifdef USE_PNG
+
+
 typedef struct {
     byte *Buffer;
     size_t Pos;
 } TPngFileBuffer;
 
-void EXPORT PngReadFunc(png_struct *Png, png_bytep buf, png_size_t size)
+void PngReadFunc(png_struct *Png, png_bytep buf, png_size_t size)
 {
     TPngFileBuffer *PngFileBuffer=(TPngFileBuffer*)png_get_io_ptr(Png);
     memcpy(buf,PngFileBuffer->Buffer+PngFileBuffer->Pos,size);
@@ -676,7 +567,7 @@ void LoadPNG (const char *name, byte **pic, int *width, int *height)
 
 	*pic = NULL;
 
-	ri.FS_LoadFile (name, (void *)&PngFileBuffer.Buffer);
+	ri.FS_LoadFile (name, (void **)&PngFileBuffer.Buffer);
 
     if (!PngFileBuffer.Buffer)
 		return;
@@ -684,7 +575,7 @@ void LoadPNG (const char *name, byte **pic, int *width, int *height)
 	if ((png_check_sig(PngFileBuffer.Buffer, 8)) == 0)
 	{
 		ri.FS_FreeFile (PngFileBuffer.Buffer); 
-		ri.Con_Printf (PRINT_ALL, "Not a PNG file: %s\n", name);
+		VID_Printf (PRINT_ALL, "Not a PNG file: %s\n", name);
 		return;
     }
 
@@ -695,7 +586,7 @@ void LoadPNG (const char *name, byte **pic, int *width, int *height)
     if (!png_ptr)
 	{
 		ri.FS_FreeFile (PngFileBuffer.Buffer);
-		ri.Con_Printf (PRINT_ALL, "Bad PNG file: %s\n", name);
+		VID_Printf (PRINT_ALL, "Bad PNG file: %s\n", name);
 		return;
 	}
 
@@ -704,7 +595,7 @@ void LoadPNG (const char *name, byte **pic, int *width, int *height)
 	{
         png_destroy_read_struct(&png_ptr, (png_infopp)NULL, (png_infopp)NULL);
 		ri.FS_FreeFile (PngFileBuffer.Buffer);
-		ri.Con_Printf (PRINT_ALL, "Bad PNG file: %s\n", name);
+		VID_Printf (PRINT_ALL, "Bad PNG file: %s\n", name);
 		return;
     }
     
@@ -713,7 +604,7 @@ void LoadPNG (const char *name, byte **pic, int *width, int *height)
 	{
         png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
 		ri.FS_FreeFile (PngFileBuffer.Buffer);
-		ri.Con_Printf (PRINT_ALL, "Bad PNG file: %s\n", name);
+		VID_Printf (PRINT_ALL, "Bad PNG file: %s\n", name);
 		return;
     }
 
@@ -725,7 +616,7 @@ void LoadPNG (const char *name, byte **pic, int *width, int *height)
 	{
         png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp)NULL);
 		ri.FS_FreeFile (PngFileBuffer.Buffer);
-		ri.Con_Printf (PRINT_ALL, "Oversized PNG file: %s\n", name);
+		VID_Printf (PRINT_ALL, "Oversized PNG file: %s\n", name);
 		return;
 	}
 
@@ -760,7 +651,7 @@ void LoadPNG (const char *name, byte **pic, int *width, int *height)
 
 	rowbytes = png_get_rowbytes(png_ptr, info_ptr);
 
-	*pic = malloc (info_ptr->height * rowbytes);
+	*pic = (byte *) malloc (info_ptr->height * rowbytes);
 
 	for (i = 0; i < info_ptr->height; i++)
 		row_pointers[i] = *pic + i*rowbytes;
@@ -775,6 +666,10 @@ void LoadPNG (const char *name, byte **pic, int *width, int *height)
 
 	ri.FS_FreeFile (PngFileBuffer.Buffer);
 }
+
+
+#endif // USE_PNG
+
 
 /*
 =========================================================
@@ -1259,7 +1154,7 @@ void LoadTGA (const char *name, byte **pic, int *width, int *height)
 		ri.Sys_Error (ERR_DROP, "LoadTGA (%s): Invalid image size", name);
 	}
 
-	targa_rgba = malloc (numPixels);
+	targa_rgba = (byte *) malloc (numPixels);
 	*pic = targa_rgba;
 
 	if (targa_header.id_length != 0)
@@ -1479,10 +1374,10 @@ breakOut:;
 	if (targa_header.attributes & 0x20)
 	{
 		byte *temp;
-		temp = malloc (numPixels);
+		temp = (byte *) malloc (numPixels);
 		if (!temp)
 			ri.Sys_Error (ERR_FATAL, "LoadTGA: not enough memory");
-		ri.Con_Printf (PRINT_DEVELOPER, "LoadTGA: Bottom-to-top TGA file (slow): %s\n", name);
+		Com_DPrintf("LoadTGA: Bottom-to-top TGA file (slow): %s\n", name);
 		memcpy (temp, targa_rgba, numPixels);
 		for (row = 0; row < rows; row++)
 		{
@@ -1494,6 +1389,10 @@ breakOut:;
 	ri.FS_FreeFile (buffer);
 }
 #endif
+
+
+
+#ifdef USE_JPEG
 /*
 =================================================================
 
@@ -1503,24 +1402,24 @@ NiceAss: Code from Q2Ice
 =================================================================
 */
 
-void EXPORT jpg_null(j_decompress_ptr cinfo)
+void jpg_null(j_decompress_ptr cinfo)
 {
 }
 
-boolean EXPORT jpg_fill_input_buffer(j_decompress_ptr cinfo)
+boolean jpg_fill_input_buffer(j_decompress_ptr cinfo)
 {
-    ri.Con_Printf(PRINT_ALL, "Premature end of JPEG data\n");
+    VID_Printf(PRINT_ALL, "Premature end of JPEG data\n");
     return 1;
 }
 
-void EXPORT jpg_skip_input_data(j_decompress_ptr cinfo, long num_bytes)
+void jpg_skip_input_data(j_decompress_ptr cinfo, long num_bytes)
 {
         
     cinfo->src->next_input_byte += (size_t) num_bytes;
     cinfo->src->bytes_in_buffer -= (size_t) num_bytes;
 }
 
-void jpeg_mem_src (j_decompress_ptr cinfo, byte *mem, int len)
+void jpeg_mem_src (j_decompress_ptr cinfo, byte *mem, unsigned long len)
 {
     cinfo->src = (struct jpeg_source_mgr *)(*cinfo->mem->alloc_small)((j_common_ptr) cinfo, JPOOL_PERMANENT, sizeof(struct jpeg_source_mgr));
     cinfo->src->init_source = jpg_null;
@@ -1554,7 +1453,7 @@ void LoadJPG (const char *filename, byte **pic, int *width, int *height)
 
 	if (rawsize < 10 || rawdata[6] != 'J' || rawdata[7] != 'F' || rawdata[8] != 'I' || rawdata[9] != 'F')
 	{ 
-		ri.Con_Printf (PRINT_ALL, "Invalid JPEG header: %s\n", filename); 
+		VID_Printf (PRINT_ALL, "Invalid JPEG header: %s\n", filename); 
 		ri.FS_FreeFile(rawdata); 
 		return; 
 	} 
@@ -1567,17 +1466,17 @@ void LoadJPG (const char *filename, byte **pic, int *width, int *height)
 
 	if(cinfo.output_components != 3 && cinfo.output_components != 4)
 	{
-		ri.Con_Printf(PRINT_ALL, "Invalid JPEG colour components\n");
+		VID_Printf(PRINT_ALL, "Invalid JPEG colour components\n");
 		jpeg_destroy_decompress(&cinfo);
 		ri.FS_FreeFile(rawdata);
 		return;
 	}
 
 	// Allocate Memory for decompressed image
-	rgbadata = malloc(cinfo.output_width * cinfo.output_height * 4);
+	rgbadata = (byte *) malloc(cinfo.output_width * cinfo.output_height * 4);
 	if(!rgbadata)
 	{
-		ri.Con_Printf(PRINT_ALL, "Insufficient memory for JPEG buffer\n");
+		VID_Printf(PRINT_ALL, "Insufficient memory for JPEG buffer\n");
 		jpeg_destroy_decompress(&cinfo);
 		ri.FS_FreeFile(rawdata);
 		return;
@@ -1588,10 +1487,10 @@ void LoadJPG (const char *filename, byte **pic, int *width, int *height)
 	*height = cinfo.output_height;
 
 	// Allocate Scanline buffer
-	scanline = malloc (cinfo.output_width * 3);
+	scanline = (byte *) malloc (cinfo.output_width * 3);
 	if (!scanline)
 	{
-		ri.Con_Printf (PRINT_ALL, "Insufficient memory for JPEG scanline buffer\n");
+		VID_Printf (PRINT_ALL, "Insufficient memory for JPEG scanline buffer\n");
 		free (rgbadata);
 		jpeg_destroy_decompress (&cinfo);
 		ri.FS_FreeFile (rawdata);
@@ -1622,6 +1521,9 @@ void LoadJPG (const char *filename, byte **pic, int *width, int *height)
 
 	*pic = rgbadata;
 }
+
+
+#endif  // USE_JPEG
 
 
 /*typedef struct _TargaHeader {
@@ -2184,8 +2086,8 @@ void GL_ResampleTexture24(unsigned *in, int inwidth, int inheight, unsigned *out
 	byte *b1,*b2;
 	unsigned *tmp,*tmp2;
 
-	tmp=malloc(inheight*inwidth*4);
-	tmp2=malloc(outwidth*outheight*4);
+	tmp = (unsigned *) malloc(inheight*inwidth*4);
+	tmp2 = (unsigned *) malloc(outwidth*outheight*4);
 
 	if (!tmp || !tmp2)
 		ri.Sys_Error (ERR_FATAL, "GL_ResampleTexture24: out of memory");
@@ -2395,20 +2297,14 @@ Proper linear filter
 */
 static void GL_MipMapLinear (unsigned *in, int inWidth, int inHeight)
 {
-	int			i, j, k;
-	byte		*outpix;
-	int			inWidthMask, inHeightMask;
-	int			total;
-	int			outWidth, outHeight;
-	unsigned	*temp;
+	int outWidth = inWidth >> 1;
+	int outHeight = inHeight >> 1;
 
-	outWidth = inWidth >> 1;
-	outHeight = inHeight >> 1;
-
+	unsigned *temp;
 	if (r_registering)
 	{
 		if (!mipmap_buffer)
-			mipmap_buffer = malloc (MAX_TEXTURE_DIMENSIONS * MAX_TEXTURE_DIMENSIONS * sizeof(int));
+			mipmap_buffer = (unsigned *) malloc (MAX_TEXTURE_DIMENSIONS * MAX_TEXTURE_DIMENSIONS * sizeof(unsigned int));
 
 		if (!mipmap_buffer)
 			ri.Sys_Error (ERR_DROP, "GL_MipMapLinear: Out of memory");
@@ -2417,22 +2313,22 @@ static void GL_MipMapLinear (unsigned *in, int inWidth, int inHeight)
 	}
 	else
 	{
-		temp = malloc (outWidth * outHeight * sizeof(int));
+		temp = (unsigned *) malloc (outWidth * outHeight * sizeof(unsigned int));
 		if (!temp)
 			ri.Sys_Error (ERR_DROP, "GL_MipMapLinear: Out of memory");
 	}
 
-	inWidthMask = inWidth - 1;
-	inHeightMask = inHeight - 1;
+	int inWidthMask = inWidth - 1;
+	int inHeightMask = inHeight - 1;
 
-	for ( i = 0 ; i < outHeight ; i++ )
+	for (int i = 0; i < outHeight; i++)
 	{
-		for ( j = 0 ; j < outWidth ; j++ )
+		for (int j = 0; j < outWidth; j++)
 		{
-			outpix = (byte *) ( temp + i * outWidth + j );
-			for ( k = 0 ; k < 4 ; k++ )
+			byte *outpix = (byte *) ( temp + i * outWidth + j );
+			for (int k = 0; k < 4; k++)
 			{
-				total = 
+				int total =
 					1 * ((byte *)&in[ ((i*2-1)&inHeightMask)*inWidth + ((j*2-1)&inWidthMask) ])[k] +
 					2 * ((byte *)&in[ ((i*2-1)&inHeightMask)*inWidth + ((j*2)&inWidthMask) ])[k] +
 					2 * ((byte *)&in[ ((i*2-1)&inHeightMask)*inWidth + ((j*2+1)&inWidthMask) ])[k] +
@@ -2475,7 +2371,7 @@ void GL_MipMap (byte *in, int width, int height)
 	int		i, j;
 	byte	*out;
 
-	if (FLOAT_NE_ZERO(gl_linear_mipmaps->value))
+	if (gl_linear_mipmaps->intvalue)
 	{
 		GL_MipMapLinear ((unsigned int *)in, width, height);
 		return;
@@ -2500,13 +2396,7 @@ int		upload_width, upload_height;
 
 qboolean GL_Upload32 (unsigned *data, int width, int height, qboolean mipmap, int bpp, image_t *image)
 {
-	int			samples;
-	unsigned	*scaled = NULL;
-	int			scaled_width, scaled_height;
-	int			i, c;
-	//byte		*scan;
-	int comp;
-
+	int scaled_width, scaled_height;
 	if (gl_config.r1gl_GL_ARB_texture_non_power_of_two)
 	{
 		scaled_width = width;
@@ -2516,11 +2406,11 @@ qboolean GL_Upload32 (unsigned *data, int width, int height, qboolean mipmap, in
 	{
 		for (scaled_width = 1 ; scaled_width < width ; scaled_width<<=1)
 			;
-		if (FLOAT_NE_ZERO(gl_round_down->value) && scaled_width > width && mipmap)
+		if (gl_round_down->intvalue && scaled_width > width && mipmap)
 			scaled_width >>= 1;
 		for (scaled_height = 1 ; scaled_height < height ; scaled_height<<=1)
 			;
-		if (FLOAT_NE_ZERO(gl_round_down->value) && scaled_height > height && mipmap)
+		if (gl_round_down->intvalue && scaled_height > height && mipmap)
 			scaled_height >>= 1;
 	}
 
@@ -2547,6 +2437,7 @@ qboolean GL_Upload32 (unsigned *data, int width, int height, qboolean mipmap, in
 	upload_width = scaled_width;
 	upload_height = scaled_height;
 
+	unsigned *scaled = NULL;
 	//r1: why bother malloc/memcpy if its discarded?
 	if (scaled_width == width && scaled_height == height)
 	{
@@ -2563,24 +2454,24 @@ qboolean GL_Upload32 (unsigned *data, int width, int height, qboolean mipmap, in
 					ri.Sys_Error (ERR_DROP, "GL_Upload32: %s: out of memory", current_texture_filename);
 			}
 
-			scaled = scaled_buffer;
+			scaled = (unsigned *) scaled_buffer;
 		}
 		else
 		{
-			scaled = malloc (scaled_width * scaled_height * sizeof(int));
+			scaled = (unsigned *) malloc (scaled_width * scaled_height * sizeof(unsigned int));
 			if (!scaled)
 				ri.Sys_Error (ERR_DROP, "GL_Upload32: %s: out of memory", current_texture_filename);
 		}
 	}
 
 	// scan the texture for any non-255 alpha
-	samples = gl_solid_format;
+	int samples = gl_solid_format;
 	
 	if (bpp == 8)
 	{
-		c = width*height;
+		int c = width*height;
 		//scan = ((byte *)data) + 3;
-		for (i=0 ; i<c ; i+= 4)
+		for (int i = 0; i < c ; i+= 4)
 		{
 			if (*(byte *)&data[i] != 255)
 			{
@@ -2594,12 +2485,13 @@ qboolean GL_Upload32 (unsigned *data, int width, int height, qboolean mipmap, in
 		samples = gl_alpha_format;
 	}
 
+	int comp;
 	if (samples == gl_solid_format)
 	    comp = gl_tex_solid_format;
 	else if (samples == gl_alpha_format)
 	    comp = gl_tex_alpha_format;
 	else {
-	    ri.Con_Printf (PRINT_ALL,
+	    VID_Printf (PRINT_ALL,
 			"GL_Upload32: %s: Unknown number of texture components %i\n",
 			   current_texture_filename, samples);
 	    comp = samples;
@@ -2609,7 +2501,7 @@ qboolean GL_Upload32 (unsigned *data, int width, int height, qboolean mipmap, in
 	{
 		if (!mipmap)
 		{
-			qglTexImage2D (GL_TEXTURE_2D, 0, comp, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+			glTexImage2D (GL_TEXTURE_2D, 0, comp, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 			goto done;
 		}
 		if (scaled != data)
@@ -2620,9 +2512,9 @@ qboolean GL_Upload32 (unsigned *data, int width, int height, qboolean mipmap, in
 		GL_ResampleTexture (data, width, height, scaled, scaled_width, scaled_height);
 	}
 
-	if (image && (image->type != it_pic || FLOAT_NE_ZERO(vid_gamma_pics->value)))
+	if (image && (image->type != it_pic || vid_gamma_pics->intvalue))
 	{
-		if (FLOAT_EQ_ZERO(gl_texture_lighting_mode->value))
+		if (!gl_texture_lighting_mode->intvalue)
 			GL_LightScaleTexture (scaled, scaled_width, scaled_height, !mipmap);
 		else
 			R_FilterTexture (scaled, scaled_width, scaled_height, image->type);
@@ -2632,15 +2524,14 @@ qboolean GL_Upload32 (unsigned *data, int width, int height, qboolean mipmap, in
 	//0.1.5: removed due to shitty drivers breaking it, thx ati
 	/*if (gl_config.r1gl_GL_SGIS_generate_mipmap)
 	{
-		qglTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-		if ((err = qglGetError()) != GL_NO_ERROR) ri.Sys_Error (ERR_FATAL, "glGetError: 0x%x", err);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+		if ((err = glGetError()) != GL_NO_ERROR) ri.Sys_Error (ERR_FATAL, "glGetError: 0x%x", err);
 
-		qglTexParameteri (GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
-		if ((err = qglGetError()) != GL_NO_ERROR) ri.Sys_Error (ERR_FATAL, "glGetError: 0x%x", err);
+		glTexParameteri (GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
+		if ((err = glGetError()) != GL_NO_ERROR) ri.Sys_Error (ERR_FATAL, "glGetError: 0x%x", err);
 	}*/
 
-	qglTexImage2D (GL_TEXTURE_2D, 0, comp, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaled);
-	GL_CheckForError ();
+	glTexImage2D (GL_TEXTURE_2D, 0, comp, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaled);
 
 	//if (mipmap && !(gl_config.r1gl_GL_SGIS_generate_mipmap))
 	if (mipmap)
@@ -2671,8 +2562,7 @@ qboolean GL_Upload32 (unsigned *data, int width, int height, qboolean mipmap, in
 			if (scaled_height < 1)
 				scaled_height = 1;
 			miplevel++;
-			qglTexImage2D (GL_TEXTURE_2D, miplevel, comp, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaled);;
-			GL_CheckForError ();
+			glTexImage2D (GL_TEXTURE_2D, miplevel, comp, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, scaled);;
 		}
 	}
 done: ;
@@ -2682,29 +2572,23 @@ done: ;
 	{
 		if (gl_config.r1gl_GL_EXT_texture_filter_anisotropic)
 		{
-			qglTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, (int)gl_ext_max_anisotropy->value);
-			GL_CheckForError ();
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, (int)gl_ext_max_anisotropy->value);
 		}
 
-		qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-		GL_CheckForError ();
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
 
-		qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
-		GL_CheckForError ();
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
 	}
 	else
 	{
 		if (gl_config.r1gl_GL_EXT_texture_filter_anisotropic)
 		{
-			qglTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
-			GL_CheckForError ();
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
 		}
 
-		qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		GL_CheckForError ();
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-		qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		GL_CheckForError ();
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	}
 
 	if (!r_registering)
@@ -2810,7 +2694,7 @@ image_t *GL_LoadPic (const char *name, byte *pic, int width, int height, imagety
 			{
 				for (i=0, image=gltextures ; i<numgltextures ; i++,image++)
 				{
-					fprintf (dump, "%i: %s[%s], %dx%d, texnum %lu, type %d, sequence %d\n", i, image->basename, image->name, image->width, image->height, image->texnum, image->type, image->registration_sequence);
+					fprintf (dump, "%i: %s[%s], %dx%d, texnum %u, type %d, sequence %d\n", i, image->basename, image->name, image->width, image->height, image->texnum, image->type, image->registration_sequence);
 				}
 				fclose (dump);
 			}
@@ -2835,18 +2719,16 @@ image_t *GL_LoadPic (const char *name, byte *pic, int width, int height, imagety
 		R_FloodFillSkin(pic, width, height);
 
 	// load little pics into the scrap
-	if (image->type == it_pic && image->width < 64 && image->height < 64 && FLOAT_EQ_ZERO(gl_noscrap->value))
+	if (image->type == it_pic && image->width < 64 && image->height < 64 && !gl_noscrap->intvalue)
 	{
 		//image->scrap = true;
 
 		if (bits == 8)
 		{
-			int		x, y;
-			int		i, j, k;
-			int		temp;
+			int x = 0, y = 0;
 			unsigned	int	texnum;
 
-			temp = Scrap_AllocBlock (image->width, image->height, &x, &y);
+			int temp = Scrap_AllocBlock (image->width, image->height, &x, &y);
 
 			if (temp == -1)
 				goto nonscrap;
@@ -2856,9 +2738,9 @@ image_t *GL_LoadPic (const char *name, byte *pic, int width, int height, imagety
 			scrap_dirty = true;
 
 			// copy the texels into the scrap block
-			k = 0;
-			for (i=0 ; i<image->height ; i++)
-				for (j=0 ; j<image->width ; j++, k++)
+			int k = 0;
+			for (int i = 0 ; i < image->height ; i++)
+				for (int j = 0 ; j < image->width ; j++, k++)
 					scrap_texels[texnum][(y+i)*BLOCK_WIDTH + x + j] = pic[k];
 
 			image->texnum = TEXNUM_SCRAPS + texnum;
@@ -2879,7 +2761,7 @@ image_t *GL_LoadPic (const char *name, byte *pic, int width, int height, imagety
 	}
 
 nonscrap:
-	image->texnum = TEXNUM_IMAGES + (image - gltextures);
+	glGenTextures(1, &image->texnum);
 	GL_Bind(image->texnum);
 
 	mipmap = (image->type != it_pic && image->type != it_sky) ? true : false;
@@ -2901,7 +2783,7 @@ nonscrap:
 		}
 		else
 		{
-			ri.Con_Printf (PRINT_DEVELOPER, "Warning, image '%s' has hi-res replacement smaller than the original! (%d x %d) < (%d x %d)\n", name, image->width, image->height, global_hax_texture_x, global_hax_texture_y);
+			Com_DPrintf("Warning, image '%s' has hi-res replacement smaller than the original! (%d x %d) < (%d x %d)\n", name, image->width, image->height, global_hax_texture_x, global_hax_texture_y);
 		}	
 	}
 
@@ -2927,7 +2809,7 @@ image_t *GL_LoadWal (const char *name)
 	len = ri.FS_LoadFile (name, (void **)&mt);
 	if (!mt)
 	{
-		ri.Con_Printf (PRINT_ALL, "GL_FindImage: can't load %s\n", name);
+		VID_Printf (PRINT_ALL, "GL_FindImage: can't load %s\n", name);
 		return r_notexture;
 	}
 
@@ -2939,12 +2821,12 @@ image_t *GL_LoadWal (const char *name)
 
 	if (len < required)
 	{
-		ri.Con_Printf (PRINT_HIGH, "Bad texture '%s', %d bytes is less than %d required\n", name, len, required);
+		VID_Printf (PRINT_HIGH, "Bad texture '%s', %d bytes is less than %d required\n", name, len, required);
 		return NULL;
 	}
 	else if (len != required)
 	{
-		ri.Con_Printf (PRINT_DEVELOPER, "Warning, texture '%s' has funny size (length %d != calculated %d)\n", name, len, required);
+		Com_DPrintf("Warning, texture '%s' has funny size (length %d != calculated %d)\n", name, len, required);
 	}
 
 	if (ofs < sizeof(*mt) || ofs >= len)
@@ -2959,6 +2841,13 @@ image_t *GL_LoadWal (const char *name)
 
 #define IMAGES_HASH_SIZE	64
 static image_t	*images_hash[IMAGES_HASH_SIZE];
+
+
+void clearImageHash(void)
+{
+	memset(&images_hash, 0, sizeof(images_hash));
+}
+
 
 unsigned int hashify (const char *S)
 {
@@ -2980,12 +2869,12 @@ void Cmd_HashStats_f (void)
 
 	for (hash = 0; hash < IMAGES_HASH_SIZE; hash++)
 	{
-		ri.Con_Printf (PRINT_ALL, "%d: ", hash);
+		VID_Printf (PRINT_ALL, "%d: ", hash);
 		for(imghash = images_hash[hash]; imghash; imghash = imghash->hash_next)
 		{
-			ri.Con_Printf (PRINT_ALL, "*");
+			VID_Printf (PRINT_ALL, "*");
 		}
-		ri.Con_Printf (PRINT_ALL, "\n");
+		VID_Printf (PRINT_ALL, "\n");
 	}
 }
 
@@ -3068,43 +2957,44 @@ image_t	*GL_FindImage (const char *name, const char *basename, imagetype_t type)
 
 		memcpy (png_name, name, len+1);
 
-		if (type == it_pic && FLOAT_NE_ZERO(gl_pic_scale->value))
+		if (type == it_pic && gl_pic_scale->intvalue)
 		{
 			if (!GetPCXInfo (name, &global_hax_texture_x, &global_hax_texture_y))
 			{
 				global_hax_texture_x = global_hax_texture_y = 0;
-				//ri.Con_Printf (PRINT_ALL, "Missing PCX file: %s\n", name);
+				//VID_Printf (PRINT_ALL, "Missing PCX file: %s\n", name);
 			}
 		}
 
 		if (load_tga_pics)
 		{
-			//png_name[len-3] = 't';
-			//png_name[len-2] = 'g';
-			//png_name[len-1] = 'a';
-			*(int *)(png_name + (len-3)) = '\0agt';
+			png_name[len-3] = 't';
+			png_name[len-2] = 'g';
+			png_name[len-1] = 'a';
 			current_texture_filename = png_name;
 			LoadTGA (png_name, &pic, &width, &height);
 		}
 		if (!pic)
 		{
+#ifdef USE_PNG
 			if (load_png_pics)
 			{
-				//png_name[len-3] = 'p';
-				//png_name[len-2] = 'n';
-				//png_name[len-1] = 'g';
-				*(int *)(png_name + (len-3)) = '\0gnp';
+				png_name[len-3] = 'p';
+				png_name[len-2] = 'n';
+				png_name[len-1] = 'g';
 				LoadPNG (png_name, &pic, &width, &height);
 			}
+#endif  // USE_PNG
 			if (!pic)
 			{
+#ifdef USE_JPEG
 				if (load_jpg_pics)
 				{
-					//png_name[len-3] = 'j';
-					//png_name[len-2] = 'p';
-					*(int *)(png_name + (len-3)) = '\0gpj';
+					png_name[len-3] = 'j';
+					png_name[len-2] = 'p';
 					LoadJPG (png_name, &pic, &width, &height);
 				}
+#endif  // USE_JPEG
 				if (!pic)
 				{
 					current_texture_filename = name;
@@ -3129,6 +3019,7 @@ image_t	*GL_FindImage (const char *name, const char *basename, imagetype_t type)
 		}
 		image = GL_LoadPic (name, pic, width, height, type, bpp);
 	}
+#ifdef USE_PNG
 	else if (!strcmp(name+len-4, ".png"))
 	{
 		LoadPNG (name, &pic, &width, &height);
@@ -3136,12 +3027,14 @@ image_t	*GL_FindImage (const char *name, const char *basename, imagetype_t type)
 			return NULL; // ri.Sys_Error (ERR_DROP, "GL_FindImage: can't load %s", name);
 		image = GL_LoadPic (name, pic, width, height, type, 32);
 	}
+#endif  // USE_PNG
 	else if (!strcmp(name+len-4, ".wal"))
 	{
 		image = GL_LoadWal (name);
 		if (!image)
 			return NULL;
 	}
+#ifdef USE_JPEG
 	else if (!strcmp(name+len-4, ".jpg"))
 	{
 		LoadJPG (name, &pic, &width, &height);
@@ -3149,6 +3042,7 @@ image_t	*GL_FindImage (const char *name, const char *basename, imagetype_t type)
 			return NULL;
 		image = GL_LoadPic (name, pic, width, height, type, 32);
 	}
+#endif  // USE_JPEG
 	else if (!strcmp(name+len-4, ".tga"))
 	{
 		LoadTGA (name, &pic, &width, &height);
@@ -3183,7 +3077,7 @@ image_t	*GL_FindImage (const char *name, const char *basename, imagetype_t type)
 R_RegisterSkin
 ===============
 */
-struct image_s * EXPORT R_RegisterSkin (char *name)
+struct image_s * R_RegisterSkin (char *name)
 {
 	return GL_FindImage (name, name, it_skin);
 }
@@ -3209,7 +3103,7 @@ void	GL_ImageList_f (void)
 		"PAL"
 	};*/
 
-	ri.Con_Printf (PRINT_ALL, "------------------\n");
+	VID_Printf (PRINT_ALL, "------------------\n");
 	texels = 0;
 
 	for (i=0, image=gltextures ; i<numgltextures ; i++, image++)
@@ -3221,41 +3115,41 @@ void	GL_ImageList_f (void)
 		{
 		case it_skin:
 			ski++;
-			ri.Con_Printf (PRINT_ALL, "M");
+			VID_Printf (PRINT_ALL, "M");
 			break;
 		case it_sprite:
 			spr++;
-			ri.Con_Printf (PRINT_ALL, "S");
+			VID_Printf (PRINT_ALL, "S");
 			break;
 		case it_wall:
 			wal++;
-			ri.Con_Printf (PRINT_ALL, "W");
+			VID_Printf (PRINT_ALL, "W");
 			break;
 		case it_pic:
 			pic++;
-			ri.Con_Printf (PRINT_ALL, "P");
+			VID_Printf (PRINT_ALL, "P");
 			break;
 		default:
 			mis++;
-			ri.Con_Printf (PRINT_ALL, " ");
+			VID_Printf (PRINT_ALL, " ");
 			break;
 		}
 
-		ri.Con_Printf (PRINT_ALL,  " %3i x %3i: %s (%d bytes)\n",
-			image->upload_width, image->upload_height, image->name, image->upload_width * image->upload_height * sizeof(int));
+		VID_Printf (PRINT_ALL,  " %3i x %3i: %s (%d bytes)\n",
+			image->upload_width, image->upload_height, image->name, (int)(image->upload_width * image->upload_height * sizeof(int)));
 	}
 
-	ri.Con_Printf (PRINT_ALL, "%d skins (M), %d sprites (S), %d world textures (W), %d pics (P), %d misc.\n", ski, spr, wal, pic, mis);
+	VID_Printf (PRINT_ALL, "%d skins (M), %d sprites (S), %d world textures (W), %d pics (P), %d misc.\n", ski, spr, wal, pic, mis);
 
 	/*
-	ri.Con_Printf (PRINT_ALL, "ImageCache: %d level 1 hits, %d level 2 hits, %d cache misses. Efficiency = %.2f%%\n",
+	VID_Printf (PRINT_ALL, "ImageCache: %d level 1 hits, %d level 2 hits, %d cache misses. Efficiency = %.2f%%\n",
 		l1cachehits,
 		l2cachehits,
 		cachemisses,
 		((float)(l1cachehits+(l2cachehits/4)) / (float)(l1cachehits+l2cachehits+cachemisses) * 100.0));
 	*/
 
-	ri.Con_Printf (PRINT_ALL, "Total texel count (not counting mipmaps): %i (%.2f MB)\n", texels, (texels * sizeof(int)) / 1024.0f / 1024.0f);
+	VID_Printf (PRINT_ALL, "Total texel count (not counting mipmaps): %i (%.2f MB)\n", texels, (texels * sizeof(int)) / 1024.0f / 1024.0f);
 }
 
 /*
@@ -3335,11 +3229,11 @@ void GL_FreeUnusedImages (void)
 		// free it
 
 		count++;
-		qglDeleteTextures (1, &image->texnum);
+		glDeleteTextures (1, &image->texnum);
 		memset (image, 0, sizeof(*image));
 	}
 
-	ri.Con_Printf (PRINT_DEVELOPER, "GL_FreeUnusedImages: freed %d images\n", count);
+	Com_DPrintf("GL_FreeUnusedImages: freed %d images\n", count);
 }
 
 
@@ -3368,7 +3262,7 @@ int Draw_GetPalette (void)
 		g = pal[i*3+1];
 		b = pal[i*3+2];
 		
-		v = (255<<24) + (r<<0) + (g<<8) + (b<<16);
+		v = (255UL<<24) + (r<<0) + (g<<8) + (b<<16);
 		d_8to24table[i] = LittleLong(v);
 
 		d_8to24float[i][0] = r / 255.0f;
@@ -3417,24 +3311,12 @@ void	GL_InitImages (void)
 	else if (gl_contrast->value > 1.5f)
 		ri.Cvar_SetValue ("gl_contrast", 1.5f);
 
-	if (FLOAT_NE_ZERO(gl_overbrights->value))
+	if (gl_overbrights->intvalue)
 		g = 1.0;
 
 	gl_state.inverse_intensity = 1 / intensity->value;
 
 	Draw_GetPalette ();
-
-	if ( qglColorTableEXT )
-	{
-		ri.FS_LoadFile( "pics/16to8.dat", (void *)&gl_state.d_16to8table );
-		if ( !gl_state.d_16to8table )
-			ri.Sys_Error( ERR_FATAL, "Couldn't load pics/16to8.pcx");
-	}
-
-	if ( gl_config.renderer & ( GL_RENDERER_VOODOO | GL_RENDERER_VOODOO2 ) )
-	{
-		g = 1.0F;
-	}
 
 	for ( i = 0; i < 256; i++ )
 	{
@@ -3489,7 +3371,7 @@ void	GL_ShutdownImages (void)
 		if (!image->registration_sequence)
 			continue;		// free image_t slot
 		// free it
-		qglDeleteTextures (1, &image->texnum);
+		glDeleteTextures (1, &image->texnum);
 		memset (image, 0, sizeof(*image));
 	}
 }

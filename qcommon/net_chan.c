@@ -91,11 +91,6 @@ Netchan_Init
 */
 void Netchan_Init (void)
 {
-	int		port;
-
-	// pick a port value that should be nice and random
-	port = (int)(random() * 0xFFFF);
-
 	showpackets = Cvar_Get ("showpackets", "0", 0);
 	showdrop = Cvar_Get ("showdrop", "0", 0);
 
@@ -112,7 +107,7 @@ Netchan_OutOfBand
 Sends an out-of-band datagram
 ================
 */
-void Netchan_OutOfBand (int net_socket, netadr_t *adr, int length, const byte *data)
+void Netchan_OutOfBand (netsrc_t net_socket, netadr_t *adr, int length, const byte *data)
 {
 	sizebuf_t	send;
 	byte		send_buf[MAX_MSGLEN];
@@ -135,7 +130,7 @@ Netchan_OutOfBandPrint
 Sends a text message in an out-of-band datagram
 ================
 */
-void Netchan_OutOfBandPrint (int net_socket, netadr_t *adr, const char *format, ...)
+void Netchan_OutOfBandPrint (netsrc_t net_socket, netadr_t *adr, const char *format, ...)
 {
 	va_list		argptr;
 	static char		string[MAX_MSGLEN - 4];
@@ -155,7 +150,7 @@ Netchan_OutOfBandProxy
 Sends an out-of-band datagram
 ================
 */
-void Netchan_OutOfBandProxy (int net_socket, netadr_t *adr, int length, const byte *data)
+void Netchan_OutOfBandProxy (netsrc_t net_socket, netadr_t *adr, int length, const byte *data)
 {
 	sizebuf_t	send;
 	byte		send_buf[MAX_MSGLEN];
@@ -178,7 +173,7 @@ Netchan_OutOfBandProxyPrint
 Sends a text message in an out-of-band datagram
 ================
 */
-void Netchan_OutOfBandProxyPrint (int net_socket, netadr_t *adr, const char *format, ...)
+void Netchan_OutOfBandProxyPrint (netsrc_t net_socket, netadr_t *adr, const char *format, ...)
 {
 	va_list		argptr;
 	static char		string[MAX_MSGLEN - 4];
@@ -284,8 +279,8 @@ int Netchan_Transmit (netchan_t *chan, int length, const byte *data)
 	else
 		SZ_Init (&send, send_buf, 1400);
 
-	w1 = ( chan->outgoing_sequence & ~(1<<31) ) | (send_reliable<<31);
-	w2 = ( chan->incoming_sequence & ~(1<<31) ) | (chan->incoming_reliable_sequence<<31);
+	w1 = ( chan->outgoing_sequence & ~(1UL<<31) ) | (((unsigned int) send_reliable) << 31);
+	w2 = ( chan->incoming_sequence & ~(1UL<<31) ) | (((unsigned int) chan->incoming_reliable_sequence) << 31);
 
 	chan->outgoing_sequence++;
 	chan->last_sent = curtime;
@@ -388,8 +383,8 @@ qboolean Netchan_Process (netchan_t *chan, sizebuf_t *msg)
 
 	chan->got_reliable = reliable_message;
 
-	sequence &= ~(1<<31);
-	sequence_ack &= ~(1<<31);	
+	sequence &= ~(1UL<<31);
+	sequence_ack &= ~(1UL<<31);
 
 	if (showpackets->intvalue)
 	{

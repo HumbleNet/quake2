@@ -71,7 +71,7 @@ cvar_t *Cvar_FindVar (const char *var_name)
 	if (!cvartree)
 		return NULL;
 
-	data = rbfind (var_name, cvartree);
+	data = (const void **) rbfind (var_name, cvartree);
 	if (data)
 	{
 		var = *(cvar_t **)data;
@@ -252,7 +252,7 @@ static cvar_t *Cvar_Add (const char *var_name, const char *var_value, int flags)
 	cvar_t		*var;
 	const void	**data;
 
-	var = Z_TagMalloc (sizeof(cvar_t), TAGMALLOC_CVAR);
+	var = (cvar_t *) Z_TagMalloc (sizeof(cvar_t), TAGMALLOC_CVAR);
 
 	var->name = CopyString (var_name, TAGMALLOC_CVAR);
 	var->string = CopyString (var_value, TAGMALLOC_CVAR);
@@ -278,7 +278,7 @@ static cvar_t *Cvar_Add (const char *var_name, const char *var_value, int flags)
 	cvar_vars = var;
 
 	//r1: insert to btree
-	data = rbsearch (var->name, cvartree);
+	data = (const void **) rbsearch (var->name, cvartree);
 	*data = var;
 
 	return var;
@@ -749,7 +749,7 @@ static void Cvar_List_f (void)
 	num = i;
 
 	len = num * sizeof(cvar_t);
-	sortedList = Z_TagMalloc (len, TAGMALLOC_CVAR);
+	sortedList = (cvar_t *) Z_TagMalloc (len, TAGMALLOC_CVAR);
 	//sortedList = alloca(len);
 	
 	for (var = cvar_vars, i = 0; var ; var = var->next, i++)

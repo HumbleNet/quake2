@@ -166,7 +166,7 @@ void SCR_StopCinematic (void)
 	}
 	if (cl.cinematicpalette_active)
 	{
-		re.CinematicSetPalette(NULL);
+		R_SetPalette(NULL);
 		cl.cinematicpalette_active = false;
 	}
 	if (cl.cinematic_file)
@@ -548,14 +548,14 @@ qboolean SCR_DrawCinematic (void)
 
 	if (cls.key_dest == key_menu)
 	{	// blank screen and pause if menu is up
-		re.CinematicSetPalette(NULL);
+		R_SetPalette(NULL);
 		cl.cinematicpalette_active = false;
 		return true;
 	}
 
 	if (!cl.cinematicpalette_active)
 	{
-		re.CinematicSetPalette(cl.cinematicpalette);
+		R_SetPalette(cl.cinematicpalette);
 		cl.cinematicpalette_active = true;
 	}
 
