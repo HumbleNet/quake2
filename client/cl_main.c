@@ -25,6 +25,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define __TIMESTAMP__ __DATE__ " " __TIME__
 #endif
 
+
+const bool is_dedicated = false;
+
 int deferred_model_index;
 
 extern cvar_t	*qport;
@@ -1189,7 +1192,6 @@ void CL_Disconnect (qboolean skipdisconnect)
 	}
 
 	VectorClear (cl.refdef.blend);
-	R_SetPalette(NULL);
 
 	//r1: why?
 	//M_ForceMenuOff ();
@@ -1498,7 +1500,7 @@ void CL_PingServers_f (void)
 
 	//also ping local server
 	adr.type = NA_IP;;
-	*(int *)&adr.ip = 0x100007F;
+	NET_SetLocalAddress(&adr);
 	adr.port = ShortSwap(PORT_SERVER);
 	Netchan_OutOfBandPrint (NS_CLIENT, &adr, "info 34\n");
 
@@ -2034,8 +2036,50 @@ void CL_ReadPackets (void)
 	memset (net_message_buffer, 31, sizeof(net_message_buffer));
 #endif
 
-	while ((i = (NET_GetPacket (NS_CLIENT, &net_from, &net_message))))
+	while (true)
 	{
+		i = (NET_GetPacket (NS_CLIENT, &net_from, &net_message));
+		
+		// adapted from SV_ReadPackets for better dropped server side connections.
+		if( !i )
+			break;
+		
+		if( i == -2 )
+			continue;
+		
+		if( i == -1 ) {
+			// r1: workaround for broken linux kernel
+			if (net_from.port == 0)
+			{
+				if (!NET_CompareBaseAdr (&net_from, &cls.netchan.remote_address))
+					continue;
+			}
+			else
+			{
+				if (!NET_CompareAdr (&net_from, &cls.netchan.remote_address))
+					continue;
+			}
+			/*
+			// r1: only drop if we haven't seen a packet for a bit to prevent spoofed ICMPs from kicking people
+			if (cls.state == cs_spawned)
+			{
+				if (cls.->lastmessage > svs.realtime - 1500)
+					continue;
+			}
+			else if (cl->state > cs_zombie)
+			{
+				// r1: longer delay if they are still loading
+				if (cl->lastmessage > svs.realtime - 10000)
+					continue;
+			}
+			
+			if (cl->state > cs_zombie)
+				SV_KickClient (cl, "connection reset by peer", NULL);
+			*/
+			CL_Disconnect(true);
+			continue;
+		}
+		
 		//
 		// remote command packet
 		//
@@ -3283,6 +3327,8 @@ void _name_changed (cvar_t *var, char *oldValue, char *newValue)
 	{
 		Cvar_Set ("name", "unnamed");
 	}
+	NET_Name_Changed(newValue);
+	CL_WriteConfiguration();
 }
 
 void _maxfps_changed (cvar_t *var, char *oldValue, char *newValue)
@@ -3781,7 +3827,11 @@ void CL_WriteConfiguration (void)
 	if (cls.state == ca_uninitialized)
 		return;
 
+#ifdef EMSCRIPTEN
+	Com_sprintf(path, sizeof(path), "%s/config/config.cfg", FS_Gamedir());
+#else
 	Com_sprintf (path, sizeof(path),"%s/config.cfg",FS_Gamedir());
+#endif
 	f = fopen (path, "w");
 	if (!f)
 	{
@@ -4060,7 +4110,7 @@ void CL_Synchronous_Frame (int msec)
 
 	if (cls.spamTime && cls.spamTime < cls.realtime)
 	{
-		Cbuf_AddText ("say \"" PRODUCTNAME " " VERSION " " __TIMESTAMP__ " " CPUSTRING " " BUILDSTRING " [http://r1ch.net/r1q2]\"\n");
+		Cbuf_AddText ("say \"" PRODUCTNAME " " VERSION " " __TIMESTAMP__ " " CPUSTRING " " BUILDSTRING " []\"\n");
 		cls.lastSpamTime = cls.realtime;
 		cls.spamTime = 0;
 	}
@@ -4120,7 +4170,7 @@ void CL_Frame (int msec)
 	if (dbg_framesleep->intvalue)
 		Sys_Sleep (dbg_framesleep->intvalue);
 #else
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(USE_HUMBLENET)
 	if (!ActiveApp && !Com_ServerState())
 		NET_Client_Sleep (100);
 #endif
@@ -4226,7 +4276,7 @@ void CL_Frame (int msec)
 			if (cls.spamTime && cls.spamTime < cls.realtime)
 			{
 				char buff[256];
-				Com_sprintf (buff, sizeof(buff), "say \"R1Q2 %s %s %s %s [http://r1ch.net/r1q2]\"\n", VERSION,
+				Com_sprintf (buff, sizeof(buff), "say \"R1Q2 %s %s %s %s []\"\n", VERSION,
 					__TIMESTAMP__, CPUSTRING, BUILDSTRING
 				);
 				Cbuf_AddText (buff);

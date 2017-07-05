@@ -95,12 +95,12 @@ void flushDraws(const char *reason);
 
 
 //please keep this undefined on modified versions.
-#define R1GL_RELEASE 1
+//#define R1GL_RELEASE 1
 
 #ifdef R1GL_RELEASE
 #define	REF_VERSION	"R1GL 0.1.5.42"
 #else
-#define REF_VERSION "R1GL015-modified"
+#define REF_VERSION "EMGL015"
 #endif
 
 #define	MAX_TEXTURE_DIMENSIONS	1024

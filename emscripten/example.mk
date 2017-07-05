@@ -13,6 +13,7 @@ UBSAN:=n
 
 
 USE_JPEG:=n
+USE_HUMBLENET:=y
 USE_OPENAL:=y
 USE_PNG:=n
 
@@ -37,7 +38,6 @@ CXXFLAGS=$(CFLAGS) -std=c++11 -fno-exceptions -fno-rtti
 LDFLAGS:=-g --preload-file baseq2
 LDFLAGS+=-s TOTAL_MEMORY=268435456
 LDFLAGS+=-s OUTLINING_LIMIT=5000
-LDFLAGS+=-s FORCE_ALIGNED_MEMORY=1
 LDLIBS:=
 LDLIBS_ref_gl:=
 
@@ -52,9 +52,14 @@ LDLIBS_client:=$(TOPDIR)/foreign/SDL2/build/.libs/libSDL2.a
 endif  # STATIC_SDL2
 
 
+#ifeq ($(USE_HUMBLENET),y)
+#LDFLAGS+=--js-library $(TOPDIR)/foreign/humblenet/library_humblenet.js
+#endif  # USE_HUMBLENET
+
+
 LTOCFLAGS:=--llvm-lto 3
 LTOLDFLAGS:=--llvm-lto 3
 
 
 OBJSUFFIX:=.o
-EXESUFFIX:=.html
+EXESUFFIX:=.js

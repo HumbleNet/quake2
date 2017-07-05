@@ -38,7 +38,7 @@ void Draw_InitLocal (void)
 	// load console characters (don't bilerp characters)
 	draw_chars = GL_FindImage ("pics/conchars.pcx", "pics/conchars.pcx", it_pic);
 	if (!draw_chars)
-		ri.Sys_Error (ERR_FATAL, "R1GL: Couldn't load conchars.pcx\n\nEither you aren't running Quake 2 from the correct directory or you are missing important files.");
+		ri.Sys_Error (ERR_FATAL, "EMGL: Couldn't load conchars.pcx\n\nEither you aren't running Quake 2 from the correct directory or you are missing important files.");
 	GL_MBind(GL_TEXTURE0, draw_chars->texnum);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -55,7 +55,7 @@ static const float conchars_texlimits[16] =
 };
 
 
-void R_DrawString(int x, int y, const char *s, int xorVal, unsigned int len) {
+void R_DrawString(int x, int y, const char *s, int xorValue, unsigned int len) {
 	GL_MBind(GL_TEXTURE0, draw_chars->texnum);
 
 	if (draw_chars->has_alpha)
@@ -71,7 +71,7 @@ void R_DrawString(int x, int y, const char *s, int xorVal, unsigned int len) {
 
 	for (unsigned int i = 0; i < len; i++)
 	{
-		int num = (s[i] ^ xorVal);
+		int num = (s[i] ^ xorValue);
 
 		num &= 0xFF;
 

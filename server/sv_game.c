@@ -463,7 +463,7 @@ fixed:
 			}
 			else if (length > sizeof(sv.configstrings[CS_NAME])-1)
 			{
-				Com_Printf ("WARNING: Map name exceeds maximum allowed length of 63 characters. R1Q2 will try to accomodate it anyway.\n", LOG_SERVER|LOG_WARNING);
+				Com_Printf ("WARNING: Map name exceeds maximum allowed length of 63 characters. EMQ2 will try to accomodate it anyway.\n", LOG_SERVER|LOG_WARNING);
 			}
 		}
 		else

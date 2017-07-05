@@ -652,7 +652,7 @@ typedef struct blackhole_s blackhole_t;
 struct blackhole_s
 {
 	blackhole_t		*next;
-	uint32			ip;
+	netadr_t		addr;
 	uint32			mask;
 	int				method;
 	char			reason[128];
@@ -664,7 +664,7 @@ typedef struct netblock_s netblock_t;
 struct netblock_s
 {
 	netblock_t		*next;
-	uint32			ip;
+	netadr_t		addr;
 	uint32			mask;
 };
 

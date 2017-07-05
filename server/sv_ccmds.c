@@ -171,7 +171,7 @@ static void DumpNetBlockList (netblock_t *list)
 	{
 		list = list->next;
 
-		Com_Printf ("%s/%d\n", LOG_GENERAL, NET_inet_ntoa (list->ip), MaskBits (NET_ntohl (list->mask)));
+		Com_Printf ("%s/%d\n", LOG_GENERAL, NET_inet_ntoa (&list->addr), MaskBits (NET_ntohl (list->mask)));
 	}
 }
 
@@ -1177,7 +1177,6 @@ static void SV_AddCvarBan_f (void)
 					"Example: addcvarban vid_ref sw KICK Software mode is not allowed\n"
 					"Example: addcvarban timescale !=1 KICK Illegal timescale value!\n"
 					"Example: addcvarban rate <5000 STUFF set rate 5000\n"
-					"Example: addcvarban version ~R1Q2 KICK R1Q2 is an evil hacked client!\n"
 					"Example: addcvarban version \"Q2 3.20 PPC\" KICK That version is not allowed\n"
 					"WARNING: If the match string requires quotes it can not be added via rcon.\n", LOG_GENERAL);
 		return;
@@ -1235,7 +1234,7 @@ static void SV_Listholes_f (void)
 	while (hole->next)
 	{
 		hole = hole->next;
-		Com_Printf ("%d: %s/%d (%s)\n", LOG_GENERAL, ++index, NET_inet_ntoa (hole->ip), MaskBits (hole->mask), hole->reason);
+		Com_Printf ("%d: %s/%d (%s)\n", LOG_GENERAL, ++index, NET_inet_ntoa (&hole->addr), MaskBits (hole->mask), hole->reason);
 	}
 }
 
@@ -1264,7 +1263,7 @@ static void SV_Delhole_f (void)
 		{
 			temp = temp->next;
 
-			if (*(uint32 *)adr.ip == temp->ip)
+			if (NET_CompareBaseAdr(&adr, &temp->addr))
 				goto remove;
 
 			x++;
@@ -1543,7 +1542,7 @@ static qboolean ValidateAndAddToNetBlockList (char *ip, netblock_t *list, int ta
 	n->next = (netblock_t *) Z_TagMalloc (sizeof(*n), tag);
 	n = n->next;
 
-	n->ip = *(uint32 *)from.ip;
+	n->addr = from;
 	n->mask = NET_htonl (CalcMask(mask));
 	n->next = NULL;
 
@@ -1555,12 +1554,11 @@ static qboolean ValidateAndRemoveFromNetBlockList (char *ip, netblock_t *list)
 	int			mask;
 	netadr_t	from;
 	netblock_t	*n, *last;
-	uint32		network_ip, network_mask;
+	uint32		network_mask;
 
 	if (!ValidateIPMask (ip, &from, &mask))
 		return -1;
 
-	network_ip = *(uint32 *)from.ip;
 	network_mask = NET_htonl (CalcMask (mask));
 
 	n = last = list;
@@ -1569,7 +1567,7 @@ static qboolean ValidateAndRemoveFromNetBlockList (char *ip, netblock_t *list)
 	{
 		n = n->next;
 
-		if (n->ip == network_ip && n->mask == network_mask)
+		if (NET_CompareBaseAdr(&n->addr, &from) && n->mask == network_mask)
 		{
 			last->next = n->next;
 			Z_Free (n);
@@ -2213,10 +2211,10 @@ static void SV_Status_f (void)
 		Com_Printf ("Protocol 35 netcode has saved %lu bytes.\n", LOG_GENERAL, svs.proto35BytesSaved);
 		Com_Printf ("Protocol 35 compression has saved %lu bytes.\n", LOG_GENERAL, svs.proto35CompressionBytes);
 		Com_Printf ("Protocol 35 usercommand scaling has saved %lu bytes.\n", LOG_GENERAL, r1q2UserCmdOptimizedBytes);
-		Com_Printf ("R1Q2 playerstate quantization optimization has saved %lu bytes.\n", LOG_GENERAL, svs.r1q2OptimizedBytes);
-		Com_Printf ("R1Q2 entity quantization optimization has saved %lu bytes.\n", LOG_GENERAL, r1q2DeltaOptimizedBytes);
-		Com_Printf ("R1Q2 custom delta management has saved %lu bytes.\n", LOG_GENERAL, svs.r1q2CustomBytes);
-		Com_Printf ("R1Q2 sv_func_entities_hack has saved %lu bytes.\n", LOG_GENERAL, svs.r1q2AttnBytes);
+		Com_Printf ("EMQ2 playerstate quantization optimization has saved %lu bytes.\n", LOG_GENERAL, svs.r1q2OptimizedBytes);
+		Com_Printf ("EMQ2 entity quantization optimization has saved %lu bytes.\n", LOG_GENERAL, r1q2DeltaOptimizedBytes);
+		Com_Printf ("EMQ2 custom delta management has saved %lu bytes.\n", LOG_GENERAL, svs.r1q2CustomBytes);
+		Com_Printf ("EMQ2 sv_func_entities_hack has saved %lu bytes.\n", LOG_GENERAL, svs.r1q2AttnBytes);
 
 		total = svs.proto35BytesSaved + svs.proto35CompressionBytes + svs.r1q2OptimizedBytes + svs.r1q2CustomBytes + r1q2DeltaOptimizedBytes + svs.r1q2AttnBytes + r1q2UserCmdOptimizedBytes;
 

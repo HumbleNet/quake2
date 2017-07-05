@@ -27,9 +27,13 @@ FILES+= \
 else  # USE_AFL
 
 
+ifneq ($(USE_HUMBLENET),y)
+
 FILES+= \
 	net_udp.c \
 	# empty line
+
+endif  # USE_HUMBLENET
 
 
 endif  # USE_AFL

@@ -32,6 +32,15 @@ r1q2ded_MODULES+=$(BUILTIN_GAME)
 endif
 
 
+ifeq ($(USE_HUMBLENET),y)
+r1q2ded_MODULES+=humblenet
+
+ifeq ($(USE_LIBWEBSOCKETS),y)
+r1q2ded_MODULES+=libwebsockets
+endif
+
+endif  # USE_HUMBLENET
+
 
 ifeq ($(BUILD_SERVER),y)
 

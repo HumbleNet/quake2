@@ -1021,6 +1021,8 @@ void Sys_SendKeyEvents (void)
 {
 	KBD_Update();
 
+	// On non-dedicated (=client) we use SDL
+	if (is_dedicated)
 	{
 		MSG        msg;
 

@@ -108,9 +108,9 @@ void R_InitParticleTexture (void)
 
 #define USE_THREADS 1
 
-#if defined(_WIN32) && defined(USE_PNG)
-extern void png_default_flush(png_structp png_ptr);
-extern void png_default_write_data(png_structp png_ptr, png_bytep data, png_size_t length);
+#ifdef WIN32
+//extern void png_default_flush(png_structp png_ptr);
+//extern void png_default_write_data(png_structp png_ptr, png_bytep data, png_size_t length);
 unsigned int __stdcall png_write_thread (byte *buffer)
 {
 	/*
@@ -297,7 +297,7 @@ void GL_ScreenShot_f (void)
 	buffer = (byte *) malloc(viddef.width*viddef.height*3);
 
 	glReadPixels (0, 0, viddef.width, viddef.height, GL_RGB, GL_UNSIGNED_BYTE, buffer ); 
-#if defined(_WIN32) && defined(USE_PNG)
+#ifdef WIN32
 	if (!strcmp (ri.Cmd_Argv(1), "jpg"))
 	{
 		//GL_ScreenShot_JPG (buffer);

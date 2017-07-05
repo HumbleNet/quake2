@@ -22,7 +22,6 @@ struct hostent {
 #include <sys/stat.h>
 
 #include <algorithm>
-#include <cassert>
 #include <cerrno>
 #include <unordered_map>
 #include <string>
@@ -272,10 +271,7 @@ int NET_GetPacket(netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
 
 	net_from->type = NA_IP;
 	net_from->port = port;
-	net_from->ip[0] = ((ip4      ) & 0xFF);
-	net_from->ip[1] = ((ip4 >>  8) & 0xFF);
-	net_from->ip[2] = ((ip4 >> 16) & 0xFF);
-	net_from->ip[3] = ((ip4 >> 24) & 0xFF);
+	net_from->ip4 = ip4;
 	fuzzRead(reinterpret_cast<char *>(net_message->data), packetSize);
 	net_message->cursize = packetSize;
 
@@ -344,7 +340,7 @@ int NET_IPSocket (char *net_interface, int port)
 }
 
 
-int NET_SendPacket (netsrc_t sock, int length, const void *data, netadr_t *to)
+int NET_SendPacket (netsrc_t sock, int length, const void *data, const netadr_t *to)
 {
 	int		net_socket;
 

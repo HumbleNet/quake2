@@ -77,6 +77,16 @@ quake2_MODULES+=$(BUILTIN_GAME)
 endif
 
 
+ifeq ($(USE_HUMBLENET),y)
+quake2_MODULES+=humblenet
+
+ifeq ($(USE_LIBWEBSOCKETS),y)
+quake2_MODULES+=libwebsockets
+endif
+
+endif  # USE_HUMBLENET
+
+
 PROGRAMS+= \
 	quake2 \
 	#empty line

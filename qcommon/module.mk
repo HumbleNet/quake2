@@ -28,6 +28,15 @@ FILES:= \
 	# empty line
 
 
+ifeq ($(USE_HUMBLENET),y)
+
+FILES+= \
+	net_humblenet.cpp \
+	# empty line
+
+endif  # USE_HUMBLENET
+
+
 SRC_$(d):=$(addprefix $(d)/,$(FILES))
 
 

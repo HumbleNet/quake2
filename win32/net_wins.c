@@ -22,7 +22,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifdef _WIN32
 
-
 #define WIN32_LEAN_AND_MEAN
 //#include "winsock.h"
 //#include "wsipx.h"
@@ -156,7 +155,7 @@ int	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
 
 //=============================================================================
 
-int NET_SendPacket (netsrc_t sock, int length, const void *data, netadr_t *to)
+int NET_SendPacket (netsrc_t sock, int length, const void *data, const netadr_t *to)
 {
 //	char *z;
 	int					ret;
@@ -511,4 +510,4 @@ char *NET_ErrorString (void)
 }
 
 
-#endif   // _WIN32
+#endif  // _WIN32

@@ -681,6 +681,7 @@ void CL_GetChallengePacket (void);
 void CL_PingServers_f (void);
 void CL_Snd_Restart_f (void);
 void CL_RequestNextDownload (void);
+void CL_WriteConfiguration(void);
 
 #ifdef CLIENT_DLL
 void CL_ClDLL_Restart_f (void);

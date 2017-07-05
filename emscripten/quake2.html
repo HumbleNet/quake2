@@ -1195,7 +1195,8 @@
     <div class="emscripten" id="status">Downloading...</div>
 
 <span id='controls'>
-  <span><input type="checkbox" id="resize" checked>Resize canvas</span>
+  <span>Lobby link: <input type="text" id="lobbyLink"></span>
+  <span><input type="checkbox" id="resize">Resize canvas</span>
   <span><input type="checkbox" id="pointerLock" checked>Lock/hide mouse pointer &nbsp;&nbsp;&nbsp;</span>
   <span><input type="button" value="Fullscreen" onclick="Module.requestFullScreen(document.getElementById('pointerLock').checked, 
                                                                             document.getElementById('resize').checked)">
@@ -1290,6 +1291,33 @@
           if (text) Module.printErr('[post-exception status] ' + text);
         };
       };
+	  Module['preRun'].push(function() {
+		HUMBLE_API.configure({
+			buildCacheKey: function(path) { return { scope: 'Quake2', path: path}; }
+		});
+		
+		// Set ENV variables here
+		// Supported variables below
+		ENV.STUN_SERVER='asm.humblebundle.com';
+		//ENV.SIGNAL_SERVER='ws://signal.test.server';
+		//ENV.AUTHTOKEN='TestUser'; // This should come from client side eg. cookie
+		
+        addRunDependency('CLOUDFS_setup');
+
+        FS.createFolder('/baseq2', 'config', true, true);
+
+        FS.mount(CLOUDFS, {
+		provider: 'Urkle',
+		scope: 'Quake2',
+		cloud: {}
+		}, '/baseq2/config');
+        FS.syncfs(true, function(err) {
+              if(err) console.log('ERROR!', err);
+              console.log('finished syncing.. YEAH!!!');
+              removeRunDependency('CLOUDFS_setup');
+            }
+         );
+      });
     </script>
     <script async type="text/javascript" src="quake2.js"></script>
   </body>

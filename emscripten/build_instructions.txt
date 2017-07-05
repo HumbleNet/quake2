@@ -1,0 +1,18 @@
+
+1. Download "q2-314-demo-x86.exe" eg. from http://www.fileplanet.com/6584/0/fileinfo/Quake-2-Demo-v3.14 (it is actually just a self-extracting zip file).
+2. Extract "Install/Data/baseq2" directory from the zip under /emscripten/baseq2 (you can delete gamex86.dll).
+3. Copy "default.cfg" from /configs to /emscripten/baseq2.
+4. Type "make" in /emscripten. When build is complete copy quake2.data, quake2.html, quake2.html.mem and quake2.js to server.
+
+To test P2P:
+
+On computer 1 console commands:
+create_lobby <name>
+gamemap <mapname>
+ 
+On computer 2 console commands:
+join_lobby <name>
+
+To test emulated P2P:
+
+Start native game with "+set net_peer_server <peer_server_url>" parameter.

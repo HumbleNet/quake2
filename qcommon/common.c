@@ -2342,7 +2342,11 @@ void Qcommon_Init (int argc, char **argv)
 	FS_InitFilesystem ();
 
 	Cbuf_AddText ("exec default.cfg\n");
-	Cbuf_AddText ("exec config.cfg\n");
+#ifdef EMSCRIPTEN
+	Cbuf_AddText ("exec config/config.cfg\n");
+#else
+	Cbuf_AddText("exec config.cfg\n");
+#endif
 
 	Cbuf_AddEarlyCommands (true);
 	Cbuf_Execute ();
@@ -2371,11 +2375,7 @@ void Qcommon_Init (int argc, char **argv)
 	showtrace = Cvar_Get ("showtrace", "0", 0);
 #endif
 #ifndef NO_SERVER
-#ifdef DEDICATED_ONLY
-	dedicated = Cvar_Get ("dedicated", "1", CVAR_NOSET);
-#else
-	dedicated = Cvar_Get ("dedicated", "0", CVAR_NOSET);
-#endif
+	dedicated = Cvar_Get ("dedicated", is_dedicated ? "1" : "0", CVAR_NOSET);
 #endif
 
 	sys_loopstyle = Cvar_Get ("sys_loopstyle", "1", 0);
@@ -2403,8 +2403,7 @@ void Qcommon_Init (int argc, char **argv)
 #endif
 
 	Com_Printf ("====== Quake2 Initialized ======\n", LOG_GENERAL);	
-	Com_Printf ("R1Q2 build " BUILD ", compiled " __DATE__ ".\n"
-				"http://www.r1ch.net/stuff/r1q2/\n"
+	Com_Printf ("build " BUILD ", compiled " __DATE__ ".\n"
 				BUILDSTRING " " CPUSTRING " (%s)\n\n", LOG_GENERAL, binary_name);
 
 #ifndef DEDICATED_ONLY
@@ -2424,14 +2423,39 @@ void Qcommon_Init (int argc, char **argv)
 			Cbuf_AddText ("toggleconsole\n");
 
 			Com_Printf (
-				"Welcome to R1Q2.\n"
+#ifdef EMSCRIPTEN
+				"Welcome to Emscripten Quake2.\n"
+#else
+				"Welcome to Quake2.\n"
+#endif
 				"\n"
 				"  Press <ESC> to open the menu.\n"
-				"  Type connect <host> to connect to a server.\n"
-				"  View the readme at http://www.r1ch.net/forum/index.php?board=8.0\n"
+				"  Type name <name> to set your player name.\n"
+				"  Type vid_width <value> to change screen width, vid_height <value> to change height.\n"
+				"  gamemap <mapname> to enter game.\n"
+				"  Mapnames are demo1, demo2, demo3.\n"
+				"  Press <F1> to view network ping.\n"
+#if defined USE_HUMBLENET && defined USE_UDP
+				"\n"
+				"  This client can use both the UDP and Humblenet networks\n"
+#endif
+#ifdef USE_UDP
+				"\n"
+				"  To connect to a server over the UDP network:\n"
+				"  Type connect <IP/hostname>\n"
+#endif
+#ifdef USE_HUMBLENET
+				"  \n"
+				"  Type net_peer_server <server> to set your peer server.\n"
+				"  Type net_server_name <name> to set your servers public name (only used when running server).\n"
+				"  To connect to a server over the humblenet:\n"
+				"  Type connect <public name/peer_[id]>.humblenet\n"
+				"  NOTE: This only works if both client and server are connected to the same peer server.\n"
+#endif
+				"\n"
 				"\n", LOG_GENERAL);
 
-			Sys_UpdateURLMenu ("http://www.r1ch.net/forum/index.php?board=8.0");
+			//Sys_UpdateURLMenu ("http://www.r1ch.net/forum/index.php?board=8.0");
 #endif
 
 #ifndef NO_SERVER
@@ -2530,6 +2554,8 @@ void Qcommon_Frame (int msec_)
 		c_pointcontents = 0;
 	}
 #endif
+
+	NET_Update();
 
 #ifndef NO_SERVER
 #ifndef DEDICATED_ONLY
@@ -2800,6 +2826,7 @@ Qcommon_Shutdown
 */
 void Qcommon_Shutdown (void)
 {
+	NET_Shutdown();
 }
 
 void Z_CheckGameLeaks (void)

@@ -1,0 +1,743 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug Humblenet|Win32">
+      <Configuration>Debug Humblenet</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Dedicated Humblenet|Win32">
+      <Configuration>Dedicated Humblenet</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Dedicated Only|Win32">
+      <Configuration>Dedicated Only</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release Humblenet|Win32">
+      <Configuration>Release Humblenet</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Template|Win32">
+      <Configuration>Template</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <SccProjectName />
+    <SccLocalPath />
+    <ProjectGuid>{D2D159D6-D803-42E8-97DC-CA4A1F5F2728}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Template|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>.\./build/binaries/debug\</OutDir>
+    <IntDir>.\./build/temp/r1q2/debug\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+    <IgnoreImportLibrary>true</IgnoreImportLibrary>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'">
+    <OutDir>.\./build/binaries/debug\</OutDir>
+    <IntDir>.\./build/temp/r1q2/debug\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+    <IgnoreImportLibrary>true</IgnoreImportLibrary>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">
+    <OutDir>.\./build/binaries/release\</OutDir>
+    <IntDir>.\./build/temp/dedicated\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">
+    <OutDir>.\emscripten\</OutDir>
+    <IntDir>.\./build/temp/dedicated\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>.\./build/binaries/release\</OutDir>
+    <IntDir>.\./build/temp/r1q2/release\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'">
+    <OutDir>.\./build/binaries/release\</OutDir>
+    <IntDir>.\./build/temp/r1q2/release\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <Optimization>Disabled</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <MinimalRebuild>true</MinimalRebuild>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;USE_OPENAL;USE_GLEW;GLEW_STATIC;GLEW_NO_GLU;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\./build/temp/r1q2/debug\</AssemblerListingLocation>
+      <PrecompiledHeaderOutputFile>.\./build/temp/r1q2/debug\quake2.pch</PrecompiledHeaderOutputFile>
+      <ObjectFileName>.\./build/temp/r1q2/debug\</ObjectFileName>
+      <ProgramDataBaseFileName>.\./build/temp/r1q2/debug\</ProgramDataBaseFileName>
+      <AdditionalIncludeDirectories>.\foreign\zlib;.\foreign\glew\include;.\foreign\SDL2\include;C:\Program Files (x86)\OpenAL 1.1 SDK\include</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Midl>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <TypeLibraryName>.\./build/binaries/debug\quake2.tlb</TypeLibraryName>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+      <TargetEnvironment>Win32</TargetEnvironment>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0409</Culture>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\./build/binaries/debug\quake2.bsc</OutputFile>
+    </Bscmake>
+    <Link>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <OutputFile>./build/binaries/debug/quake2.exe</OutputFile>
+      <AdditionalDependencies>winmm.lib;wsock32.lib;dxguid.lib;dinput8.lib;dsound.lib;SDL2.lib;opengl32.lib;openal32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>.\foreign\SDL2\lib;C:\Program Files (x86)\OpenAL 1.1 SDK\libs\Win32</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <Optimization>Disabled</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <MinimalRebuild>true</MinimalRebuild>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;USE_OPENAL;USE_GLEW;GLEW_STATIC;GLEW_NO_GLU;USE_HUMBLENET;WINSOCK2;MICROSTACK_NO_STDAFX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\./build/temp/r1q2/debug\</AssemblerListingLocation>
+      <PrecompiledHeaderOutputFile>.\./build/temp/r1q2/debug\quake2.pch</PrecompiledHeaderOutputFile>
+      <ObjectFileName>.\./build/temp/r1q2/debug\</ObjectFileName>
+      <ProgramDataBaseFileName>.\./build/temp/r1q2/debug\</ProgramDataBaseFileName>
+      <AdditionalIncludeDirectories>.\foreign\zlib;.\foreign\glew\include;.\foreign\SDL2\include;C:\OpenSSL-Win32\include;C:\Program Files (x86)\OpenAL 1.1 SDK\include;.\foreign\humblenet;.\foreign\libwebsockets\lib;.\foreign\humblenet\webrtc\Microstack</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Midl>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <TypeLibraryName>.\./build/binaries/debug\quake2.tlb</TypeLibraryName>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+      <TargetEnvironment>Win32</TargetEnvironment>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0409</Culture>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\./build/binaries/debug\quake2.bsc</OutputFile>
+    </Bscmake>
+    <Link>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <OutputFile>./build/binaries/debug/quake2.exe</OutputFile>
+      <AdditionalDependencies>winmm.lib;wsock32.lib;dxguid.lib;dinput8.lib;dsound.lib;SDL2.lib;opengl32.lib;openal32.lib;websockets_static.lib;C:\OpenSSL-Win32\lib\VC\ssleay32MDd.lib;C:\OpenSSL-Win32\lib\VC\libeay32MDd.lib;ws2_32.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>.\foreign\SDL2\lib;./foreign/libwebsockets;C:\Program Files (x86)\OpenAL 1.1 SDK\libs\Win32</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <Optimization>Disabled</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;DEBUG;_WINDOWS;DEDICATED_ONLY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\./build/temp/dedicated\</AssemblerListingLocation>
+      <BrowseInformation>true</BrowseInformation>
+      <PrecompiledHeaderOutputFile>.\./build/temp/dedicated\quake2.pch</PrecompiledHeaderOutputFile>
+      <ObjectFileName>.\./build/temp/dedicated\</ObjectFileName>
+      <ProgramDataBaseFileName>.\./build/temp/dedicated\</ProgramDataBaseFileName>
+      <AdditionalIncludeDirectories>./foreign/zlib;C:\Program Files (x86)\OpenAL 1.1 SDK\include</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Midl>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <TypeLibraryName>.\./build/binaries/release\quake2.tlb</TypeLibraryName>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+      <TargetEnvironment>Win32</TargetEnvironment>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0409</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\./build/binaries/release\quake2.bsc</OutputFile>
+    </Bscmake>
+    <Link>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <OutputFile>./build/binaries/release/quake2.exe</OutputFile>
+      <AdditionalLibraryDirectories>m:\quake2\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>winmm.lib;wsock32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <Optimization>Disabled</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;DEBUG;_WINDOWS;DEDICATED_ONLY;USE_HUMBLENET;WINSOCK2;MICROSTACK_NO_STDAFX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\./build/temp/dedicated\</AssemblerListingLocation>
+      <BrowseInformation>true</BrowseInformation>
+      <PrecompiledHeaderOutputFile>.\./build/temp/dedicated\quake2.pch</PrecompiledHeaderOutputFile>
+      <ObjectFileName>.\./build/temp/dedicated\</ObjectFileName>
+      <ProgramDataBaseFileName>.\./build/temp/dedicated\</ProgramDataBaseFileName>
+      <AdditionalIncludeDirectories>.\foreign\zlib;.\foreign\glew\include;.\foreign\SDL2\include;C:\OpenSSL-Win32\include;C:\Program Files (x86)\OpenAL 1.1 SDK\include;.\foreign\humblenet;.\foreign\libwebsockets\lib;.\foreign\humblenet\webrtc\Microstack</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Midl>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <TypeLibraryName>.\./build/binaries/release\quake2.tlb</TypeLibraryName>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+      <TargetEnvironment>Win32</TargetEnvironment>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0409</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\./build/binaries/release\quake2.bsc</OutputFile>
+    </Bscmake>
+    <Link>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <OutputFile>./emscripten/quake2.exe</OutputFile>
+      <AdditionalLibraryDirectories>./foreign/libwebsockets;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>winmm.lib;wsock32.lib;websockets_static.lib;C:\OpenSSL-Win32\lib\VC\ssleay32MDd.lib;C:\OpenSSL-Win32\lib\VC\libeay32MDd.lib;ws2_32.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <StringPooling>true</StringPooling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <Optimization>MaxSpeed</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;USE_OPENAL;USE_GLEW;GLEW_STATIC;GLEW_NO_GLU;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\./build/temp/r1q2/release\</AssemblerListingLocation>
+      <PrecompiledHeaderOutputFile>.\./build/temp/r1q2/release\quake2.pch</PrecompiledHeaderOutputFile>
+      <ObjectFileName>.\./build/temp/r1q2/release\</ObjectFileName>
+      <ProgramDataBaseFileName>.\./build/temp/r1q2/release\</ProgramDataBaseFileName>
+      <AdditionalIncludeDirectories>.\foreign\zlib;.\foreign\glew\include;.\foreign\SDL2\include;C:\Program Files (x86)\OpenAL 1.1 SDK\include</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Midl>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <TypeLibraryName>.\./build/binaries/release\quake2.tlb</TypeLibraryName>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+      <TargetEnvironment>Win32</TargetEnvironment>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0409</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\./build/binaries/release\quake2.bsc</OutputFile>
+    </Bscmake>
+    <Link>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>./build/binaries/release/quake2.exe</OutputFile>
+      <AdditionalDependencies>winmm.lib;wsock32.lib;dxguid.lib;dinput8.lib;dsound.lib;SDL2.lib;opengl32.lib;openal32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>.\foreign\SDL2\lib;C:\Program Files (x86)\OpenAL 1.1 SDK\libs\Win32</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'">
+    <ClCompile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <StringPooling>true</StringPooling>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <Optimization>MaxSpeed</Optimization>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;USE_OPENAL;USE_GLEW;GLEW_STATIC;GLEW_NO_GLU;USE_HUMBLENET;WINSOCK2;MICROSTACK_NO_STDAFX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AssemblerListingLocation>.\./build/temp/r1q2/release\</AssemblerListingLocation>
+      <PrecompiledHeaderOutputFile>.\./build/temp/r1q2/release\quake2.pch</PrecompiledHeaderOutputFile>
+      <ObjectFileName>.\./build/temp/r1q2/release\</ObjectFileName>
+      <ProgramDataBaseFileName>.\./build/temp/r1q2/release\</ProgramDataBaseFileName>
+      <AdditionalIncludeDirectories>.\foreign\zlib;.\foreign\glew\include;.\foreign\SDL2\include;C:\OpenSSL-Win32\include;C:\Program Files (x86)\OpenAL 1.1 SDK\include;.\foreign\humblenet;.\foreign\libwebsockets\lib;.\foreign\humblenet\webrtc\Microstack</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Midl>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <TypeLibraryName>.\./build/binaries/release\quake2.tlb</TypeLibraryName>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+      <TargetEnvironment>Win32</TargetEnvironment>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0409</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\./build/binaries/release\quake2.bsc</OutputFile>
+    </Bscmake>
+    <Link>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OutputFile>./build/binaries/release/quake2.exe</OutputFile>
+      <AdditionalDependencies>winmm.lib;wsock32.lib;dxguid.lib;dinput8.lib;dsound.lib;SDL2.lib;opengl32.lib;openal32.lib;websockets_static.lib;C:\OpenSSL-Win32\lib\VC\ssleay32MDd.lib;C:\OpenSSL-Win32\lib\VC\libeay32MDd.lib;ws2_32.lib;Iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>.\foreign\SDL2\lib;./foreign/libwebsockets;C:\Program Files (x86)\OpenAL 1.1 SDK\libs\Win32</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="client\vid_menu.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="foreign\glew\src\glew.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="foreign\humblenet\humblenet_native.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="foreign\humblenet\humblepeer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="foreign\humblenet\webrtc\core\utils.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="foreign\humblenet\webrtc\Microstack\ILibAsyncServerSocket.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="foreign\humblenet\webrtc\Microstack\ILibAsyncSocket.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="foreign\humblenet\webrtc\Microstack\ILibAsyncUDPSocket.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="foreign\humblenet\webrtc\Microstack\ILibParsers.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="foreign\humblenet\webrtc\Microstack\ILibWebClient.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="foreign\humblenet\webrtc\Microstack\ILibWebRTC.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="foreign\humblenet\webrtc\Microstack\ILibWebServer.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="foreign\humblenet\webrtc\Microstack\ILibWrapperWebRTC.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="foreign\libpng\png.c" />
+    <ClCompile Include="foreign\libpng\pngerror.c" />
+    <ClCompile Include="foreign\libpng\pngget.c" />
+    <ClCompile Include="foreign\libpng\pngmem.c" />
+    <ClCompile Include="foreign\libpng\pngpread.c" />
+    <ClCompile Include="foreign\libpng\pngrio.c" />
+    <ClCompile Include="foreign\libpng\pngrtran.c" />
+    <ClCompile Include="foreign\libpng\pngrutil.c" />
+    <ClCompile Include="foreign\libpng\pngset.c" />
+    <ClCompile Include="foreign\libpng\pngtrans.c" />
+    <ClCompile Include="foreign\zlib\adler32.c" />
+    <ClCompile Include="foreign\zlib\crc32.c" />
+    <ClCompile Include="foreign\zlib\deflate.c" />
+    <ClCompile Include="foreign\zlib\gzclose.c" />
+    <ClCompile Include="foreign\zlib\gzlib.c" />
+    <ClCompile Include="foreign\zlib\gzread.c" />
+    <ClCompile Include="foreign\zlib\gzwrite.c" />
+    <ClCompile Include="foreign\zlib\inffast.c" />
+    <ClCompile Include="foreign\zlib\inflate.c" />
+    <ClCompile Include="foreign\zlib\inftrees.c" />
+    <ClCompile Include="foreign\zlib\trees.c" />
+    <ClCompile Include="foreign\zlib\zutil.c" />
+    <ClCompile Include="linux\al_linux.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="linux\qal_linux.c" />
+    <ClCompile Include="linux\vid_so.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="qcommon\ioapi.c" />
+    <ClCompile Include="qcommon\net_humblenet.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="qcommon\unzip.c" />
+    <ClCompile Include="ref_gl\gl_draw.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="ref_gl\gl_image.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="ref_gl\gl_light.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="ref_gl\gl_mesh.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="ref_gl\gl_model.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="ref_gl\gl_rmain.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="ref_gl\gl_rmisc.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="ref_gl\gl_rsurf.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="ref_gl\gl_warp.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="ref_gl\qgl_linux.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="server\q2ded.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="win32\cd_win.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="client\cl_cin.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="client\cl_dll.c" />
+    <ClCompile Include="client\cl_ents.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="client\cl_fx.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="client\cl_input.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="client\cl_inv.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="client\cl_main.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="client\cl_newfx.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="client\cl_parse.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="client\cl_pred.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="client\cl_scrn.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="client\cl_tent.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="client\cl_view.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="qcommon\cmd.c" />
+    <ClCompile Include="qcommon\cmodel.c" />
+    <ClCompile Include="qcommon\common.c" />
+    <ClCompile Include="win32\conproc.c" />
+    <ClCompile Include="client\console.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="qcommon\crc.c" />
+    <ClCompile Include="qcommon\cvar.c" />
+    <ClCompile Include="qcommon\files.c" />
+    <ClCompile Include="win32\in_win.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="client\keys.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="client\le_physics.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="client\le_util.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="game\m_flash.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="qcommon\md4.c" />
+    <ClCompile Include="client\menu.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="qcommon\mersennetwister.c" />
+    <ClCompile Include="qcommon\net_chan.c" />
+    <ClCompile Include="win32\net_wins.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="qcommon\pmove.c" />
+    <ClCompile Include="game\q_shared.c" />
+    <ClCompile Include="win32\q_shwin.c" />
+    <ClCompile Include="client\qmenu.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="qcommon\redblack.c" />
+    <ClCompile Include="client\snd_dma.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="client\snd_mem.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="client\snd_mix.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="win32\snd_win.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="server\sv_ccmds.c" />
+    <ClCompile Include="server\sv_ents.c" />
+    <ClCompile Include="server\sv_game.c" />
+    <ClCompile Include="server\sv_init.c" />
+    <ClCompile Include="server\sv_main.c" />
+    <ClCompile Include="server\sv_send.c" />
+    <ClCompile Include="server\sv_user.c" />
+    <ClCompile Include="server\sv_world.c" />
+    <ClCompile Include="win32\sys_win.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="client\anorms.h" />
+    <ClInclude Include="qcommon\bspfile.h" />
+    <ClInclude Include="client\cdaudio.h" />
+    <ClInclude Include="client\client.h" />
+    <ClInclude Include="ref_gl\gl_local.h" />
+    <ClInclude Include="ref_gl\gl_model.h" />
+    <ClInclude Include="ref_gl\qgl.h" />
+    <ClInclude Include="win32\conproc.h" />
+    <ClInclude Include="client\console.h" />
+    <ClInclude Include="game\game.h" />
+    <ClInclude Include="client\input.h" />
+    <ClInclude Include="client\keys.h" />
+    <ClInclude Include="game\q_shared.h" />
+    <ClInclude Include="qcommon\qcommon.h" />
+    <ClInclude Include="qcommon\qfiles.h" />
+    <ClInclude Include="client\qmenu.h" />
+    <ClInclude Include="client\ref.h" />
+    <ClInclude Include="client\screen.h" />
+    <ClInclude Include="server\server.h" />
+    <ClInclude Include="client\snd_loc.h" />
+    <ClInclude Include="client\sound.h" />
+    <ClInclude Include="win32\winquake.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="win32\q2.ico">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">true</ExcludedFromBuild>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="win32\q2.rc">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug Humblenet|Win32'">win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Dedicated Only|Win32'">win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Dedicated Humblenet|Win32'">win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release Humblenet|Win32'">win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

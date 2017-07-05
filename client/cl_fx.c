@@ -2149,7 +2149,7 @@ void CL_TrapParticles (entity_t *ent)
 		if (!free_particles)
 			return;
 
-		cparticle_t	*p = free_particles;
+		struct particle_s *p = free_particles;
 		free_particles = p->next;
 		p->next = active_particles;
 		active_particles = p;

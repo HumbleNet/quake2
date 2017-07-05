@@ -19,11 +19,12 @@
 #include <sys/utsname.h>
 #define __USE_GNU 1
 
+#include <SDL_filesystem.h>
+
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif  // _GNU_SOURCE
 
-#include <link.h>
 #include <sys/ucontext.h>
 #include <sys/resource.h>
 
@@ -183,7 +184,7 @@ static int dlcallback (struct dl_phdr_info *info, size_t size, void *data)
 #endif
 
 
-#ifndef EMSCRIPTEN
+#ifdef __linux__
 
 /* Obtain a backtrace and print it to stderr. 
  * Adapted from http://www.delorie.com/gnu/docs/glibc/libc_665.html
@@ -252,7 +253,7 @@ void Sys_Backtrace (int sig, siginfo_t *siginfo, void *secret)
 }
 
 
-#endif  // EMSCRIPTEN
+#endif  // __linux__
 
 
 void Sys_ProcessTimes_f (void)
@@ -338,7 +339,7 @@ void Sys_Init(void)
 #endif
   /* Install our signal handler */
 
-#ifndef EMSCRIPTEN
+#ifdef __linux__
 
 #ifndef __x86_64__
 	struct sigaction sa;
@@ -367,7 +368,7 @@ void Sys_Init(void)
 	signal (SIGTERM, Sys_KillServer);
 	signal (SIGINT, Sys_KillServer);
 
-#endif  // EMSCRIPTEN
+#endif  // __linux__
 
 	//initialize timer base
 	Sys_Milliseconds ();
@@ -626,10 +627,17 @@ int main (int argc, char **argv)
 	//seteuid(getuid());
 	//
 
-#ifndef EMSCRIPTEN
+#ifdef EMSCRIPTEN
+#else  // 
 	if (getuid() == 0 || geteuid() == 0)
 		Sys_Error ("For security reasons, do not run Quake II as root.");
 #endif  // EMSCRIPTEN
+
+#ifdef __APPLE__
+	char *base = SDL_GetBasePath();
+	if (base) chdir(base);
+	SDL_free(base);
+#endif  // __APPLE__
 
 	binary_name = argv[0];
 

@@ -904,7 +904,10 @@ void CL_SendCmd (void)
 	// deliver the message
 	//
 
-	Netchan_Transmit (&cls.netchan, buf.cursize, buf.data);	
+	if( Netchan_Transmit (&cls.netchan, buf.cursize, buf.data) == -1 ) {
+		CL_Disconnect(true);
+		return;
+	}
 
 	CL_InitCmd(); //jec - init the next usercmd buffer.
 }

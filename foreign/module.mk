@@ -5,6 +5,8 @@ d              := $(dir)
 
 SUBDIRS:= \
 	glew \
+	humblenet \
+	libwebsockets \
 	libjpeg-turbo \
 	libpng \
 	SDL2 \

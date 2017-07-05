@@ -42,7 +42,9 @@ const char *fragmentShaderSrc =
 "uniform sampler2D tex0;\n"
 "uniform sampler2D tex1;\n"
 
+#ifndef __APPLE__
 "precision highp float;\n"
+#endif
 
 "#ifdef ALPHA\n"
 "uniform float alphaRef;\n"
@@ -353,7 +355,11 @@ static Shader *createShader(const ShaderState *state) {
 	}
 
 	const char *srcArray[3];
+#ifdef __APPLE__
+	srcArray[0] = "#version 120\n";
+#else
 	srcArray[0] = "#version 100\n";
+#endif
 	srcArray[1] = (const char *) &defineBuf;
 	GLuint program = glCreateProgram();
 	GLint temp = 0;
@@ -366,11 +372,12 @@ static Shader *createShader(const ShaderState *state) {
 	if (temp != GL_TRUE) {
 		printf("vertex shader compile failed:\n");
 		glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &temp);
-		char buf[temp + 1];
+		char *buf = (char *) malloc(temp + 1);
 		memset(buf, '\0', temp + 1);
 		glGetShaderInfoLog(vertexShader, temp, NULL, buf);
 
 		printf("%s\n", buf);
+		free(buf);
 		abort();
 	}
 	glAttachShader(program, vertexShader);
@@ -384,11 +391,12 @@ static Shader *createShader(const ShaderState *state) {
 	if (temp != GL_TRUE) {
 		printf("fragment shader compile failed:\n");
 		glGetShaderiv(fragmentShader, GL_INFO_LOG_LENGTH, &temp);
-		char buf[temp + 1];
+		char *buf = (char *) malloc(temp + 1);
 		memset(buf, '\0', temp + 1);
 		glGetShaderInfoLog(fragmentShader, temp, NULL, buf);
 
 		printf("%s\n", buf);
+		free(buf);
 		abort();
 	}
 	glAttachShader(program, fragmentShader);

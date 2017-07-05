@@ -1,12 +1,17 @@
 // net_wins.c
 
-#ifndef _WIN32
+#if !defined _WIN32 && defined USE_UDP
 
-#ifndef EMSCRIPTEN
+#if ! defined EMSCRIPTEN && ! defined __APPLE__
 #define SOCK_EXTENDED_ERR 1
 #endif  // EMSCRIPTEN
 
 #include "../qcommon/qcommon.h"
+
+#ifdef USE_HUMBLENET
+	#include "humblenet_socket.h"
+	#undef SOCK_EXTENDED_ERR
+#else
 
 #include <unistd.h>
 #include <sys/socket.h>
@@ -27,6 +32,8 @@
 #include <libc.h>
 #endif
 
+#endif
+
 static unsigned int net_inittime;
 
 static unsigned long long net_total_in;
@@ -42,6 +49,8 @@ static int			ip_sockets[2];
 char *NET_ErrorString (void);
 
 cvar_t	*net_no_recverr;
+
+#include "../qcommon/humblenet_common.c"
 
 //Aiee...
 #include "../qcommon/net_common.c"
@@ -194,6 +203,15 @@ int	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
 
 	if (ret == -1)
 	{
+#ifndef MSG_ERRQUEUE
+		if( errno == EAGAIN || errno == EWOULDBLOCK )
+			return 0;
+		
+		Com_Printf ("NET_GetPacket: %s\n", LOG_NET, NET_ErrorString());
+		
+		if( errno == ECONNRESET )
+			return -1;
+#else
 		//linux makes this needlessly complex, couldn't just return the source of the error in from, oh no...
 		struct probehdr	rcvbuf;
 		struct iovec	iov;
@@ -319,9 +337,7 @@ int	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
 			}
 #endif  // SOCK_EXTENDED_ERR
 		}
-
-		//errno = err;
-		//Com_Printf ("NET_GetPacket: %s\n", LOG_NET, NET_ErrorString());
+#endif
 		return 0;
 	}
 
@@ -344,7 +360,7 @@ int	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message)
 
 //=============================================================================
 
-int NET_SendPacket (netsrc_t sock, int length, const void *data, netadr_t *to)
+int NET_SendPacket (netsrc_t sock, int length, const void *data, const netadr_t *to)
 {
 	int		ret;
 	struct sockaddr_in	addr;
@@ -381,6 +397,10 @@ int NET_SendPacket (netsrc_t sock, int length, const void *data, netadr_t *to)
 	if (ret == -1)
 	{
 		Com_Printf ("NET_SendPacket to %s: ERROR: %s\n", LOG_NET, NET_AdrToString(to), NET_ErrorString());
+		
+		if( errno == ECONNRESET )
+			return -1;
+		
 		return 0;
 	}
 
@@ -400,6 +420,9 @@ void NET_Init (void)
 {
 	NET_Common_Init ();
 	net_no_recverr = Cvar_Get ("net_no_recverr", "0", 0);
+#ifdef USE_HUMBLENET
+	HUMBLENET_Init();
+#endif
 }
 
 
@@ -438,6 +461,7 @@ int NET_IPSocket (char *net_interface, int port)
 		return 0;
 	}
 
+#ifdef IP_RECVERR
 	// r1: accept icmp unreachables for quick disconnects
 	if (!net_no_recverr->intvalue)
 	{
@@ -446,7 +470,8 @@ int NET_IPSocket (char *net_interface, int port)
 			Com_Printf ("UDP_OpenSocket: Couldn't set IP_RECVERR: %s\n", LOG_NET, NET_ErrorString());
 		}
 	}
-
+#endif
+	
 	if (!net_interface || !net_interface[0] || !Q_stricmp(net_interface, "localhost"))
 		address.sin_addr.s_addr = INADDR_ANY;
 	else

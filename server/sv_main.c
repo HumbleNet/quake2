@@ -1785,7 +1785,7 @@ void Blackhole (netadr_t *from, qboolean isAutomatic, int mask, int method, cons
 
 	temp->next = NULL;
 
-	temp->ip = *(uint32 *)from->ip;
+	temp->addr = *from;
 	temp->mask = NET_htonl (CalcMask(mask));
 	temp->method = method;
 
@@ -1799,7 +1799,7 @@ void Blackhole (netadr_t *from, qboolean isAutomatic, int mask, int method, cons
 	temp->reason[sizeof(temp->reason)-1] = 0;
 
 	if (sv.state)
-		Com_Printf ("Added %s/%d to blackholes for %s.\n", LOG_SERVER|LOG_EXPLOIT, NET_inet_ntoa (temp->ip), mask, temp->reason);
+		Com_Printf ("Added %s/%d to blackholes for %s.\n", LOG_SERVER|LOG_EXPLOIT, NET_inet_ntoa (&temp->addr), mask, temp->reason);
 }
 
 qboolean UnBlackhole (int index)
@@ -2029,9 +2029,6 @@ static void SV_ConnectionlessPacket (void)
 	char		*s;
 	char		*c;
 	qboolean	whiteholed;
-	uint32		network_ip;
-
-	network_ip = *(uint32 *)net_from.ip;
 
 	whiteholed = false;
 
@@ -2039,7 +2036,7 @@ static void SV_ConnectionlessPacket (void)
 	while (whitehole->next)
 	{
 		whitehole = whitehole->next;
-		if ((network_ip & whitehole->mask) == (whitehole->ip & whitehole->mask))
+		if (NET_CompareAddrMask(&net_from, &whitehole->addr, whitehole->mask))
 		{
 			whiteholed = true;
 			break;
@@ -2052,7 +2049,7 @@ static void SV_ConnectionlessPacket (void)
 		while (blackhole->next)
 		{
 			blackhole = blackhole->next;
-			if ((network_ip & blackhole->mask) == (blackhole->ip & blackhole->mask))
+			if (NET_CompareAddrMask(&net_from, &blackhole->addr, blackhole->mask))
 			{
 				//do rate limiting in case there is some long-ish reason
 				if (blackhole->method == BLACKHOLE_MESSAGE)
@@ -3534,7 +3531,11 @@ void SV_Init (void)
 	sv_interpolated_pmove = Cvar_Get ("sv_interpolated_pmove", "0", 0);
 	sv_interpolated_pmove->help = "Interpolate player movements server-side that have a duration of this value or higher to help compensate for low packet rates. Be sure you fully understand how it works before enabling; see the R1Q2 readme. Default 0.\n";
 
+#ifdef USE_HUMBLENET
+	sv_global_master = Cvar_Get ("sv_global_master", "0", 0);
+#else  // USE_HUMBLENET
 	sv_global_master = Cvar_Get ("sv_global_master", "1", 0);
+#endif  // USE_HUMBLENET
 	sv_global_master->help = "Report to the global Q2 master at q2servers.com. Default 1.\n";
 
 	sv_cheaternet = Cvar_Get ("sv_cheaternet", "60", 0);

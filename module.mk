@@ -64,20 +64,37 @@ CFLAGS+=-isystem$(TOPDIR)/foreign/libjpeg-turbo
 endif
 
 
+ifeq ($(USE_HUMBLENET),y)
+CFLAGS+=-isystem$(TOPDIR)/foreign/humblenet
+CFLAGS+=-DUSE_HUMBLENET
+endif
+
+
 ifeq ($(USE_GLEW),y)
 CFLAGS+=-isystem$(TOPDIR)/foreign/glew/include
 CFLAGS+=-DUSE_GLEW -DGLEW_STATIC -DGLEW_NO_GLU
-endif  # USE_GLEW
+endif
+
+
+ifeq ($(USE_LIBWEBSOCKETS),y)
+CFLAGS+=-isystem$(TOPDIR)/foreign/libwebsockets/lib
+CFLAGS+=-isystem$(TOPDIR)/foreign/libwebsockets/linux
+CFLAGS+=-DCMAKE_BUILD=1
+
+CFLAGS+=-isystem$(TOPDIR)/foreign/humblenet/webrtc/core
+CFLAGS+=-isystem$(TOPDIR)/foreign/humblenet/webrtc/Microstack
+CFLAGS+=-D_POSIX
+endif
 
 
 ifeq ($(USE_OPENAL),y)
 CFLAGS+=-DUSE_OPENAL
-endif  # USE_OPENAL
+endif
 
 
 ifeq ($(USE_PNG),y)
 CFLAGS+=-isystem$(TOPDIR)/foreign/libpng
-endif  # USE_PNG
+endif
 
 
 CFLAGS+=-isystem$(TOPDIR)/foreign/zlib

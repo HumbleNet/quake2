@@ -20,7 +20,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // r_main.c
 
 
+#ifdef _MSC_VER
+#include <process.h>
+#else
 #include <unistd.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -1266,6 +1270,7 @@ static qboolean GLimp_InitGraphics( qboolean fullscreen )
 			return true;
 	}
 	
+	// Move this somewhere
 	srand(getpid());
 
 #if 0
@@ -1307,6 +1312,11 @@ static qboolean GLimp_InitGraphics( qboolean fullscreen )
 			flags |= SDL_WINDOW_INPUT_GRABBED;
 		}
 
+#ifdef EMSCRIPTEN
+		viddef.width = 800;
+ 		viddef.height = 600;
+		emscripten_log(EM_LOG_CONSOLE, "Create window, size %d x %d\n", viddef.width, viddef.height);
+#endif  // EMSCRIPTEN
 		window = SDL_CreateWindow("Quake II", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, viddef.width, viddef.height, flags);
 		if (!window) {
 			Sys_Error("(SDLGL) SDL CreateWindow failed: %s\n", SDL_GetError());
@@ -1595,7 +1605,7 @@ retryQGL:
 	}
 #endif
 
-	VID_Printf( PRINT_ALL, "Initializing r1gl extensions:\n" );
+	VID_Printf( PRINT_ALL, "Initializing emgl extensions:\n" );
 
 	/*gl_config.r1gl_GL_SGIS_generate_mipmap = false;
 	if ( strstr( gl_config.extensions_string, "GL_SGIS_generate_mipmap" ) ) {
@@ -1634,6 +1644,8 @@ retryQGL:
 	} else {
 		VID_Printf( PRINT_ALL, "...GL_ARB_texture_non_power_of_two not found\n" );
 	}
+
+	VID_Printf( PRINT_ALL, "Initializing emgl NVIDIA-only extensions:\n" );
 
 	Com_DPrintf("GL_SetDefaultState()\n" );
 	GL_SetDefaultState();

@@ -147,6 +147,11 @@ void M_PopMenu (void)
 
 	if (!m_menudepth)
 		M_ForceMenuOff ();
+
+#ifdef EMSCRIPTEN
+	// Save config when quitting menu
+	CL_WriteConfiguration();
+#endif
 }
 
 

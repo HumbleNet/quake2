@@ -13,10 +13,12 @@ UBSAN:=n
 AFL:=n
 
 
-USE_JPEG:=y
+USE_JPEG:=n
+USE_HUMBLENET:=y
 USE_GLEW:=y
+USE_LIBWEBSOCKETS:=y
 USE_OPENAL:=y
-USE_PNG:=y
+USE_PNG:=n
 
 BUILD_SERVER:=y
 
@@ -37,9 +39,10 @@ CXXFLAGS=$(CFLAGS) -std=c++11 -fno-exceptions -fno-rtti
 
 
 LDFLAGS:=-g
-LDLIBS:=-lm -ldl
+LDLIBS:=-lm -ldl -lpthread
 LDLIBS_ref_gl:=-lGL $(shell sdl2-config --libs)
 LDLIBS_client:=$(shell pkg-config openal --libs)
+LDLIBS_libwebsockets:=-lssl -lcrypto
 
 
 SOCFLAGS:=-fPIC -DPIC

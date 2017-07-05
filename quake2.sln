@@ -1,0 +1,53 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "game", "game\game.vcxproj", "{2F8E7B11-51DA-450D-8C56-3112D61FE95F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "quake2", "quake2.vcxproj", "{D2D159D6-D803-42E8-97DC-CA4A1F5F2728}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug Humblenet|Win32 = Debug Humblenet|Win32
+		Debug|Win32 = Debug|Win32
+		Dedicated Humblenet|Win32 = Dedicated Humblenet|Win32
+		Dedicated Only|Win32 = Dedicated Only|Win32
+		Release Humblenet|Win32 = Release Humblenet|Win32
+		Release|Win32 = Release|Win32
+		Template|Win32 = Template|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2F8E7B11-51DA-450D-8C56-3112D61FE95F}.Debug Humblenet|Win32.ActiveCfg = Debug|Win32
+		{2F8E7B11-51DA-450D-8C56-3112D61FE95F}.Debug Humblenet|Win32.Build.0 = Debug|Win32
+		{2F8E7B11-51DA-450D-8C56-3112D61FE95F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{2F8E7B11-51DA-450D-8C56-3112D61FE95F}.Debug|Win32.Build.0 = Debug|Win32
+		{2F8E7B11-51DA-450D-8C56-3112D61FE95F}.Dedicated Humblenet|Win32.ActiveCfg = Debug|Win32
+		{2F8E7B11-51DA-450D-8C56-3112D61FE95F}.Dedicated Humblenet|Win32.Build.0 = Debug|Win32
+		{2F8E7B11-51DA-450D-8C56-3112D61FE95F}.Dedicated Only|Win32.ActiveCfg = Debug|Win32
+		{2F8E7B11-51DA-450D-8C56-3112D61FE95F}.Dedicated Only|Win32.Build.0 = Debug|Win32
+		{2F8E7B11-51DA-450D-8C56-3112D61FE95F}.Release Humblenet|Win32.ActiveCfg = Release|Win32
+		{2F8E7B11-51DA-450D-8C56-3112D61FE95F}.Release Humblenet|Win32.Build.0 = Release|Win32
+		{2F8E7B11-51DA-450D-8C56-3112D61FE95F}.Release|Win32.ActiveCfg = Release|Win32
+		{2F8E7B11-51DA-450D-8C56-3112D61FE95F}.Release|Win32.Build.0 = Release|Win32
+		{2F8E7B11-51DA-450D-8C56-3112D61FE95F}.Template|Win32.ActiveCfg = Release|Win32
+		{2F8E7B11-51DA-450D-8C56-3112D61FE95F}.Template|Win32.Build.0 = Release|Win32
+		{D2D159D6-D803-42E8-97DC-CA4A1F5F2728}.Debug Humblenet|Win32.ActiveCfg = Debug Humblenet|Win32
+		{D2D159D6-D803-42E8-97DC-CA4A1F5F2728}.Debug Humblenet|Win32.Build.0 = Debug Humblenet|Win32
+		{D2D159D6-D803-42E8-97DC-CA4A1F5F2728}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D2D159D6-D803-42E8-97DC-CA4A1F5F2728}.Debug|Win32.Build.0 = Debug|Win32
+		{D2D159D6-D803-42E8-97DC-CA4A1F5F2728}.Dedicated Humblenet|Win32.ActiveCfg = Dedicated Humblenet|Win32
+		{D2D159D6-D803-42E8-97DC-CA4A1F5F2728}.Dedicated Humblenet|Win32.Build.0 = Dedicated Humblenet|Win32
+		{D2D159D6-D803-42E8-97DC-CA4A1F5F2728}.Dedicated Only|Win32.ActiveCfg = Dedicated Only|Win32
+		{D2D159D6-D803-42E8-97DC-CA4A1F5F2728}.Dedicated Only|Win32.Build.0 = Dedicated Only|Win32
+		{D2D159D6-D803-42E8-97DC-CA4A1F5F2728}.Release Humblenet|Win32.ActiveCfg = Release Humblenet|Win32
+		{D2D159D6-D803-42E8-97DC-CA4A1F5F2728}.Release Humblenet|Win32.Build.0 = Release Humblenet|Win32
+		{D2D159D6-D803-42E8-97DC-CA4A1F5F2728}.Release|Win32.ActiveCfg = Release|Win32
+		{D2D159D6-D803-42E8-97DC-CA4A1F5F2728}.Release|Win32.Build.0 = Release|Win32
+		{D2D159D6-D803-42E8-97DC-CA4A1F5F2728}.Template|Win32.ActiveCfg = Template|Win32
+		{D2D159D6-D803-42E8-97DC-CA4A1F5F2728}.Template|Win32.Build.0 = Template|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -32,6 +32,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "../game/q_shared.h"
 
+
+#ifdef USE_HUMBLENET
+#include "humblenet.h"
+#endif  // USE_HUMBLENET
+
+
 #define	BASEDIRNAME	"baseq2"
 
 #ifdef _WIN32
@@ -102,6 +108,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 		#define CPUSTRING "emscripten"
 
+#elif defined __APPLE__
+
+#define BUILDSTRING "osx"
+
+		#define CPUSTRING "osx"
+
 #else	// !WIN32
 
 	#error Unknown architecture, please update qcommon.h!
@@ -133,13 +145,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 	#define PRODUCTNAME "R1Q2"
 	#define PRODUCTNAMELOWER "r1q2"
 #else
-	#define R1BINARY "R1Q2"
+	#define R1BINARY "EMQ2"
 	#define RELEASESTRING "Source Build"
-	#define PRODUCTNAME "R1Q2 (modified)"
-	#define PRODUCTNAMELOWER "r1q2 (mod)"
+	#define PRODUCTNAME "EMQ2 (modified)"
+	#define PRODUCTNAMELOWER "emq2 (mod)"
 #endif
 
-#define R1Q2_VERSION_STRING "R1Q2 " VERSION " " CPUSTRING " " __DATE__ " " BUILDSTRING
+#define R1Q2_VERSION_STRING "EMQ2 " VERSION " " CPUSTRING " " __DATE__ " " BUILDSTRING
 
 //============================================================================
 
@@ -265,6 +277,9 @@ extern	float	LittleFloat (float l);
 //============================================================================
 
 extern	qboolean	q2_initialized;
+
+extern const bool is_dedicated;
+
 
 int	COM_Argc (void);
 char *COM_Argv (int arg);	// range and null checked
@@ -735,39 +750,37 @@ typedef enum {NS_CLIENT, NS_SERVER} netsrc_t;
 typedef struct
 {
 	netadrtype_t	type;
-
-	byte	ip[4];
-	//byte	ipx[10];
-
 	uint16	port;
+
+	union {
+		uint32 ip4;
+	byte	ip[4];
+	};
 } netadr_t;
 
 void		NET_Init (void);
 void		NET_Shutdown (void);
+void		NET_Update (void);
+void		NET_Name_Changed(const char *newValue);
 
 int			NET_Config (int openFlags);
 
 int			NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message);
-int			NET_SendPacket (netsrc_t sock, int length, const void *data, netadr_t *to);
+int			NET_SendPacket (netsrc_t sock, int length, const void *data, const netadr_t *to);
 
-#define NET_IsLocalAddress(x) \
-	((x)->ip[0] == 127)
 
-#define NET_IsLANAddress(x) \
-	(((x)->ip[0] == 127) || ((x)->ip[0] == 10) || (*(uint16 *)(x)->ip == 0xA8C0) || (*(uint16 *)(x)->ip == 0x10AC))
-//		127.x.x.x				10.x.x.x					192.168.x.x									172.16.x.x
+void NET_SetLocalAddress(netadr_t *addr);
 
-#define NET_IsLocalHost(x) \
-	((x)->type == NA_LOOPBACK)
+bool NET_IsLocalAddress(const netadr_t *addr);
+bool NET_IsLANAddress(const netadr_t *addr);
+bool NET_IsLocalHost(const netadr_t *addr);
+bool NET_CompareAdr(const netadr_t *addr1, const netadr_t *addr2);
+bool NET_CompareBaseAdr(const netadr_t *addr1, const netadr_t *addr2);
+bool NET_CompareAddrMask(const netadr_t *addr1, const netadr_t *addr2, uint32 mask);
 
-#define NET_CompareAdr(a,b) \
-	((*(uint32 *)(a)->ip == *(uint32 *)(b)->ip) && (a)->port == (b)->port)
 
-#define NET_CompareBaseAdr(a,b) \
-	(*(uint32 *)(a)->ip == *(uint32 *)(b)->ip)
-
-char		*NET_inet_ntoa (uint32 ip);
-char		*NET_AdrToString (netadr_t *a);
+char		*NET_inet_ntoa (const netadr_t *addr);
+char		*NET_AdrToString (const netadr_t *a);
 qboolean	NET_StringToAdr (const char *s, netadr_t *a);
 #ifndef NO_SERVER
 void		NET_Sleep(int msec);

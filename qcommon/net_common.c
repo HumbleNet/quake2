@@ -48,6 +48,43 @@ void NET_Common_Init (void)
 	*(int *)&a->ip = ((struct sockaddr_in *)s)->sin_addr.s_addr; \
 	a->port = ((struct sockaddr_in *)s)->sin_port; \
 
+
+void NET_SetLocalAddress(netadr_t *addr) {
+	// TODO: fix strict aliasing violation
+	*(int *)&addr->ip = 0x100007F;
+}
+
+
+bool NET_IsLocalAddress(const netadr_t *x) {
+	return ((x)->ip[0] == 127);
+}
+
+
+bool NET_IsLANAddress(const netadr_t *x) {
+	return (((x)->ip[0] == 127) || ((x)->ip[0] == 10) || (*(uint16 *)(x)->ip == 0xA8C0) || (*(uint16 *)(x)->ip == 0x10AC));
+	//		127.x.x.x				10.x.x.x					192.168.x.x									172.16.x.x
+}
+
+
+bool NET_IsLocalHost(const netadr_t *x) {
+	return ((x)->type == NA_LOOPBACK);
+}
+
+
+bool NET_CompareAdr(const netadr_t *a, const netadr_t *b) {
+	return ((*(uint32 *)(a)->ip == *(uint32 *)(b)->ip) && (a)->port == (b)->port);
+}
+
+
+bool NET_CompareAddrMask(const netadr_t *addr1, const netadr_t *addr2, uint32 mask) {
+	return (addr1->ip4 & mask) == (addr2->ip4 & mask);
+}
+
+
+bool NET_CompareBaseAdr(const netadr_t *a, const netadr_t *b) {
+	return (*(uint32 *)(a)->ip == *(uint32 *)(b)->ip);
+}
+
 qboolean	NET_StringToSockaddr (const char *s, struct sockaddr *sadr)
 {
 	int	isip = 0;
@@ -150,7 +187,7 @@ qboolean	NET_StringToAdr (const char *s, netadr_t *a)
 }
 
 
-void NetadrToSockadr (netadr_t *a, struct sockaddr_in *s)
+void NetadrToSockadr (const netadr_t *a, struct sockaddr_in *s)
 {
 	memset (s, 0, sizeof(*s));
 
@@ -170,8 +207,10 @@ void NetadrToSockadr (netadr_t *a, struct sockaddr_in *s)
 	}
 }
 
-char	*NET_inet_ntoa (uint32 ip)
+char	*NET_inet_ntoa(const netadr_t *addr)
 {
+	// TODO: fix strict aliasing violation
+	uint32 ip = addr->ip4;
 	return inet_ntoa (*(struct in_addr *)&ip);
 }
 
@@ -185,11 +224,16 @@ uint32 NET_ntohl (uint32 ip)
 	return ntohl (ip);
 }
 
-char	*NET_AdrToString (netadr_t *a)
+uint32 NET_ntohs (uint32 ip)
+{
+    return ntohs (ip);
+}
+
+char	*NET_AdrToString (const netadr_t *a)
 {
 	static	char	s[32];
 	
-	Com_sprintf (s, sizeof(s), "%i.%i.%i.%i:%i", a->ip[0], a->ip[1], a->ip[2], a->ip[3], ntohs(a->port));
+	Com_sprintf (s, sizeof(s), "%i.%i.%i.%i:%i", a->ip[0], a->ip[1], a->ip[2], a->ip[3], NET_ntohs(a->port));
 
 	return s;
 }
@@ -211,6 +255,7 @@ NET_Config
 A single player game will only use the loopback code
 ====================
 */
+#ifndef HAVE_NET_Config
 int	NET_Config (int toOpen)
 {
 	int		i;
@@ -244,6 +289,7 @@ int	NET_Config (int toOpen)
 
 	return i;
 }
+#endif
 
 void NET_SetProxy (netadr_t *proxy)
 {
@@ -261,6 +307,7 @@ void NET_SetProxy (netadr_t *proxy)
 NET_OpenIP
 ====================
 */
+#ifndef HAVE_NET_OpenIP
 void NET_OpenIP (int flags)
 {
 	cvar_t	*ip;
@@ -297,6 +344,10 @@ void NET_OpenIP (int flags)
 	// dedicated servers don't need client ports
 	if (dedicated)
 		return;
+    
+    // only open client port if requested.
+    if( !(flags & NET_CLIENT) )
+        return;
 
 	if (!ip_sockets[NS_CLIENT])
 	{
@@ -320,9 +371,11 @@ void NET_OpenIP (int flags)
 	if (!ip_sockets[NS_CLIENT])
 		Com_Error (ERR_DROP, "Couldn't allocate client IP port.");
 }
+#endif
 
 // sleeps msec or until net socket is ready
 #ifndef NO_SERVER
+#ifndef HAVE_NET_Sleep
 void NET_Sleep(int msec)
 {
     struct timeval timeout;
@@ -341,6 +394,7 @@ void NET_Sleep(int msec)
 	timeout.tv_usec = (msec%1000)*1000;
 	select ((int)(ip_sockets[NS_SERVER]+1), &fdset, NULL, NULL, &timeout);
 }
+#endif
 #endif
 
 void Net_Restart_f (void)
@@ -412,6 +466,7 @@ void NET_SendLoopPacket (netsrc_t sock, int length, const void *data)
 
 #endif
 
+#ifndef HAVE_NET_Client_Sleep
 int NET_Client_Sleep (int msec)
 {
     struct timeval	timeout;
@@ -430,4 +485,15 @@ int NET_Client_Sleep (int msec)
 	timeout.tv_sec = msec/1000;
 	timeout.tv_usec = (msec%1000)*1000;
 	return select ((int)(i+1), &fdset, NULL, NULL, &timeout);
+}
+#endif
+
+#ifndef HAVE_NET_Update
+void NET_Update(void) {
+	// Nothing here
+}
+#endif
+
+
+void NET_Name_Changed(const char *newValue) {
 }

@@ -289,7 +289,7 @@ void EXPORT SV_LinkEdict (edict_t *ent)
 			}
 
 			// and z maxs can be negative...
-			int k = (int)((ent->maxs[2]+32)/8);
+			unsigned int k = (unsigned int)((ent->maxs[2]+32)/8);
 			if (k<1)
 				k = 1;
 			if (k>63)

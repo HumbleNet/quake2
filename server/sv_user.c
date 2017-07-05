@@ -313,7 +313,7 @@ static void SV_New_f (void)
 
 	//warn if client is newer than server
 	if (sv_client->protocol_version > MINOR_VERSION_R1Q2)
-		Com_Printf ("NOTICE: Client %s[%s] uses R1Q2 protocol version %d, server is using %d. Check you have the latest R1Q2 installed.\n", LOG_NOTICE|LOG_SERVER, sv_client->name, NET_AdrToString(&sv_client->netchan.remote_address), sv_client->protocol_version, MINOR_VERSION_R1Q2);
+		Com_Printf ("NOTICE: Client %s[%s] uses EMQ2 protocol version %d, server is using %d. Check you have the latest R1Q2 installed.\n", LOG_NOTICE|LOG_SERVER, sv_client->name, NET_AdrToString(&sv_client->netchan.remote_address), sv_client->protocol_version, MINOR_VERSION_R1Q2);
 
 	//r1: new client state now to prevent multiple new from causing high cpu / overflows.
 	sv_client->state = cs_spawning;

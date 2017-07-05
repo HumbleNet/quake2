@@ -24,7 +24,7 @@ byte *membase;
 int maxhunksize;
 int curhunksize;
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__APPLE__)
 #define MMAP_ANON MAP_ANON
 #else
 #define MMAP_ANON MAP_ANONYMOUS
@@ -60,13 +60,32 @@ void *Hunk_Alloc (int size)
 
 int Hunk_End (void)
 {
-#if !(defined(__FreeBSD__) || defined(EMSCRIPTEN))
+#if defined(__APPLE__) || defined(EMSCRIPTEN)
+	// OSX has no mremap, so we will just simply unmap the end of the memory block.
+	
+	int pagesize = getpagesize();
+	int commitsize = curhunksize + sizeof(intptr_t);
+	int alignsize = commitsize % pagesize;
+	if( alignsize )
+		commitsize += pagesize - alignsize;
+	
+	// align the end to a page.
+	if( munmap( membase + commitsize, maxhunksize - commitsize ) )
+	   Sys_Error("Hunk_End:  Could not munmap virtual block (%d)", errno);
+	
+	*((intptr_t *)membase) = commitsize;
+	
+#elif !(defined(__FreeBSD__) || defined(EMSCRIPTEN) )
 	byte *n;
 
 	n = (byte *) mremap(membase, maxhunksize, curhunksize + sizeof(intptr_t), 0);
 	if (n != membase)
 		Sys_Error("Hunk_End:  Could not remap virtual block (%d)", errno);
 	*((intptr_t *)membase) = curhunksize + sizeof(intptr_t);
+#else
+	// we need to record the length of the block for unmap, since the remap did
+	// not occur, the length should be the original requested length.
+	*((intptr_t *)membase) = maxhunksize;
 #endif
 	
 	return curhunksize;
